@@ -260,6 +260,60 @@ const CITIES_LOCATIONS = {
   ]
 };
 
+
+const DHAKA_THANAS = [
+  ['adabor','আদাবর'],['airport','এয়ারপোর্ট'],['badda','বাড্ডা'],['banani','বনানী'],
+  ['bangshal','বংশাল'],['bhashantek','ভাষানটেক'],['cantonment','ক্যান্টনমেন্ট'],['chawkbazar','চকবাজার'],
+  ['darus-salam','দারুসসালাম'],['dakshinkhan','দক্ষিণখান'],['demra','ডেমরা'],['dhanmondi','ধানমন্ডি'],
+  ['gandaria','গেন্ডারিয়া'],['gulshan','গুলশান'],['hazaribagh','হাজারীবাগ'],['jatrabari','যাত্রাবাড়ী'],
+  ['kadamtali','কদমতলী'],['kafrul','কাফরুল'],['kalabagan','কলাবাগান'],['kamrangirchar','কামরাঙ্গীরচর'],
+  ['khilgaon','খিলগাঁও'],['khilkhet','খিলক্ষেত'],['kotwali','কোতোয়ালি'],['lalbagh','লালবাগ'],
+  ['mirpur-model','মিরপুর মডেল'],['mohammadpur','মোহাম্মদপুর'],['motijheel','মতিঝিল'],['mugda','মুগদা'],
+  ['new-market','নিউ মার্কেট'],['pallabi','পল্লবী'],['paltan-model','পল্টন মডেল'],['ramna-model','রমনা মডেল'],
+  ['rampura','রামপুরা'],['rupnagar','রূপনগর'],['sabujbagh','সবুজবাগ'],['shah-ali','শাহ আলী'],
+  ['shahbagh','শাহবাগ'],['sher-e-bangla-nagar','শেরেবাংলা নগর'],['shyampur','শ্যামপুর'],['sutrapur','সূত্রাপুর'],
+  ['shahjahanpur','শাহজাহানপুর'],['tejgaon','তেজগাঁও'],['tejgaon-industrial','তেজগাঁও শিল্পাঞ্চল'],['turag','তুরাগ'],
+  ['uttara-model','উত্তরা মডেল'],['uttarkhan','উত্তরখান'],['uttara-west','উত্তরা পশ্চিম'],['vatara','ভাটারা'],['wari','ওয়ারী'],
+  ['savar-model','সাভার মডেল'],['ashulia','আশুলিয়া'],['dhamrai','ধামরাই'],['keraniganj-model','কেরানীগঞ্জ মডেল'],
+  ['dakshin-keraniganj','দক্ষিণ কেরানীগঞ্জ'],['nawabganj','নবাবগঞ্জ'],['dohar','দোহার']
+];
+
+// Suggested locality names for quick filtering. Users can still search reviews
+// from any locality entered by reviewers, so this list is not restrictive.
+const DHAKA_AREA_SUGGESTIONS = {
+  'mirpur-model': ['মিরপুর-১', 'মিরপুর-২', 'মিরপুর-৬', 'মিরপুর-১০', 'মিরপুর-১১', 'মিরপুর-১২', 'কাজীপাড়া', 'শেওড়াপাড়া', 'মিরপুর DOHS'],
+  'pallabi': ['পল্লবী', 'মিরপুর-১১', 'মিরপুর-১২', 'ডিওএইচএস', 'কালশী'],
+  'rupnagar': ['রূপনগর', 'বেরিবাঁধ', 'দুয়ারীপাড়া'],
+  'mohammadpur': ['মোহাম্মদপুর', 'তাজমহল রোড', 'জাপান গার্ডেন সিটি', 'শেখেরটেক', 'আদাবর সংলগ্ন'],
+  'adabor': ['আদাবর', 'শেখেরটেক', 'মোহাম্মদীয়া হাউজিং', 'বায়তুল আমান হাউজিং'],
+  'dhanmondi': ['ধানমন্ডি-১', 'ধানমন্ডি-২৭', 'ধানমন্ডি-৩২', 'শংকর', 'জিগাতলা'],
+  'gulshan': ['গুলশান-১', 'গুলশান-২', 'নিকেতন'],
+  'banani': ['বনানী', 'বনানী DOHS'],
+  'badda': ['মধ্য বাড্ডা', 'উত্তর বাড্ডা', 'দক্ষিণ বাড্ডা', 'মেরুল বাড্ডা', 'আফতাবনগর'],
+  'rampura': ['রামপুরা', 'ওয়েস্ট রামপুরা', 'উলন', 'বনশ্রী'],
+  'vatara': ['বসুন্ধরা আবাসিক এলাকা', 'জোয়ার সাহারা', 'নতুন বাজার'],
+  'uttara-model': ['উত্তরা সেক্টর ১', 'উত্তরা সেক্টর ৩', 'উত্তরা সেক্টর ৪', 'উত্তরা সেক্টর ৭', 'উত্তরা সেক্টর ১১', 'উত্তরা সেক্টর ১৩'],
+  'uttara-west': ['উত্তরা সেক্টর ১২', 'উত্তরা সেক্টর ১৪', 'উত্তরা সেক্টর ১৫', 'উত্তরা সেক্টর ১৬'],
+  'savar-model': ['সাভার বাজার', 'সাভার পৌর এলাকা', 'নবীনগর', 'বিরুলিয়া'],
+  'ashulia': ['আশুলিয়া', 'জামগড়া', 'নরসিংহপুর', 'বাইপাইল', 'জিরাবো', 'পল্লীবিদ্যুৎ'],
+  'keraniganj-model': ['কেরানীগঞ্জ', 'কালাতিয়া', 'রোহিতপুর'],
+  'dakshin-keraniganj': ['চুনকুটিয়া', 'কদমতলী', 'আটি বাজার']
+};
+
+const LEGACY_AREA_TO_THANA = {
+  mirpur: 'mirpur-model', bashundhara: 'vatara', uttara: 'uttara-model',
+  dhanmondi: 'dhanmondi', mohammadpur: 'mohammadpur', banasree: 'rampura', gulshan: 'gulshan',
+  nasirabad: 'nasirabad', gec: 'panchlaish', chawkbazar: 'chawkbazar', agrabad: 'double-mooring', patenga: 'patenga'
+};
+
+const CHITTAGONG_THANAS = [
+  ['akbar-shah','আকবর শাহ'], ['bakalia','বাকলিয়া'], ['bandar','বন্দর'], [' bayezid','বায়েজিদ বোস্তামী'],
+  ['chandgaon','চান্দগাঁও'], ['chawkbazar','চকবাজার'], ['double-mooring','ডবলমুরিং'], ['halishahar','হালিশহর'],
+  ['khulshi','খুলশী'], ['kotwali','কোতোয়ালি'], [' pahartali','পাহাড়তলী'], ['panchlaish','পাঁচলাইশ'],
+  ['patenga','পতেঙ্গা'], [' sadarghat','সদরঘাট']
+].map(([id, name]) => [id.trim(), name]);
+
+
 // --- BILINGUAL UI DICTIONARY ---
 const UI_TEXT = {
   bn: {
@@ -273,7 +327,7 @@ const UI_TEXT = {
     heroTitle2: 'আগে জানুন বাড়িওয়ালা কেমন।',
     heroSub:
       'বাসা বাইরে থেকে চকচকে হলেও আগের ভাড়াটিয়া কেন বাসা ছেড়েছিলেন, এবং পানি-গ্যাসের আসল অবস্থা কী—জেনে নিন সরাসরি আগের ভাড়াটিয়াদের কাছ থেকে।',
-    searchPlaceholder: 'রোড, বাসার নাম বা হোল্ডিং লিখে খুঁজুন...',
+    searchPlaceholder: 'এলাকার নাম, থানা বা বাসার নাম লিখে খুঁজুন...',
     cityDhaka: 'ঢাকা',
     cityChittagong: 'চট্টগ্রাম',
     step1AreaTitle: '১. এলাকা নির্বাচন করুন',
@@ -310,7 +364,7 @@ const UI_TEXT = {
     heroTitle2: 'Find out how the landlord really is.',
     heroSub:
       'Before moving into a new flat, check why the previous tenant left, how the water & gas situation is, and discuss openly with past tenants in the comments.',
-    searchPlaceholder: 'Search by house name, road, or sector...',
+    searchPlaceholder: 'Search by area, thana, or house name...',
     cityDhaka: 'Dhaka',
     cityChittagong: 'Chittagong',
     step1AreaTitle: '1. Select Area',
@@ -552,7 +606,7 @@ function AdminDashboard({ auth, db }) {
                 <ActionButtons path={['reviews']} id={item.id} label="Review" />
               </div></div>
               <p className="text-sm whitespace-pre-wrap">{item.reviewText}</p>
-              <p className="text-xs text-slate-500">Overall: {item.overallRating}/10 · Landlord: {item.landlordRating}/10 · Utility: {item.utilityRating}/10 · Security: {item.securityRating}/10</p>
+              <p className="text-xs text-slate-500">Overall: {item.overallRating}/10 · Landlord: {item.landlordRating}/10 · Neighborhood: {item.utilityRating}/10 · Security: {item.securityRating}/10</p>
             </article>
           ))}
         </section>
@@ -652,7 +706,7 @@ function AdminDashboard({ auth, db }) {
                   ['ফ্লোর / ইউনিট', selectedReview.floorUnit],
                   ['কতদিন ছিলেন', selectedReview.stayDuration],
                   ['বাড়িওয়ালার রেটিং', selectedReview.landlordRating != null ? `${selectedReview.landlordRating}/10` : null],
-                  ['ইউটিলিটি রেটিং', selectedReview.utilityRating != null ? `${selectedReview.utilityRating}/10` : null],
+                  ['এলাকার সার্বিক পরিবেশ', selectedReview.utilityRating != null ? `${selectedReview.utilityRating}/10` : null],
                   ['নিরাপত্তা রেটিং', selectedReview.securityRating != null ? `${selectedReview.securityRating}/10` : null],
                   ['সার্বিক রেটিং', selectedReview.overallRating != null ? `${selectedReview.overallRating}/10` : null],
                   ['গ্যাসের অবস্থা', selectedReview.gasStatus],
@@ -709,6 +763,7 @@ export default function App() {
 
   const [selectedAreaId, setSelectedAreaId] = useState('all');
   const [selectedSubBlock, setSelectedSubBlock] = useState('all');
+  const thanaOptions = selectedCity === 'dhaka' ? DHAKA_THANAS : CHITTAGONG_THANAS;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTenantType, setSelectedTenantType] = useState('All');
   const [sortBy, setSortBy] = useState('helpful');
@@ -733,8 +788,9 @@ export default function App() {
 
   const [newReview, setNewReview] = useState({
     city: 'dhaka',
-    areaId: 'mirpur',
-    subBlock: 'Mirpur 10',
+    areaId: 'mirpur-model',
+    thanaId: 'mirpur-model',
+    subBlock: 'মিরপুর-১০',
     road: '',
     houseName: '',
     houseType: 'Family',
@@ -855,10 +911,13 @@ export default function App() {
     return () => unsubs.forEach((unsub) => unsub());
   }, [reviews, user]);
 
-  const activeAreaObj = useMemo(
-    () => activeCityAreas.find((a) => a.id === selectedAreaId) || null,
-    [activeCityAreas, selectedAreaId]
-  );
+  const areaOptionsForFilter = useMemo(() => {
+    if (selectedAreaId === 'all') return [];
+    const suggested = selectedCity === 'dhaka' ? (DHAKA_AREA_SUGGESTIONS[selectedAreaId] || []) : [];
+    const legacyGroups = Object.entries(LEGACY_AREA_TO_THANA).filter(([legacyId, thanaId]) => thanaId === selectedAreaId).flatMap(([legacyId]) => (CITIES_LOCATIONS[selectedCity] || []).find((group) => group.id === legacyId)?.blocks.map((block) => block.id) || []);
+    const fromReviews = reviews.filter((r) => r.city === selectedCity && (r.thanaId || LEGACY_AREA_TO_THANA[r.areaId] || r.areaId) === selectedAreaId).map((r) => r.subBlock).filter(Boolean);
+    return [...new Set([...suggested, ...legacyGroups, ...fromReviews])].sort((a, b) => a.localeCompare(b, lang === 'bn' ? 'bn' : 'en'));
+  }, [selectedCity, selectedAreaId, reviews, lang]);
 
   const modalCityAreas = CITIES_LOCATIONS[newReview.city] || CITIES_LOCATIONS.dhaka;
   const modalAreaObj = useMemo(
@@ -870,45 +929,38 @@ export default function App() {
     setSelectedCity(cityKey);
     setSelectedAreaId('all');
     setSelectedSubBlock('all');
-    setNewReview((prev) => ({
-      ...prev,
-      city: cityKey,
-      areaId: CITIES_LOCATIONS[cityKey][0].id,
-      subBlock: CITIES_LOCATIONS[cityKey][0].blocks[0].id
-    }));
+    setSearchQuery('');
   };
 
-  const handleSelectArea = (areaId) => {
-    setSelectedAreaId(areaId);
+  const handleSelectArea = (thanaId) => {
+    setSelectedAreaId(thanaId);
     setSelectedSubBlock('all');
     if (activeTab !== 'explore') setActiveTab('explore');
   };
 
   const areaCounts = useMemo(() => {
     const counts = {};
-    activeCityAreas.forEach((a) => {
-      counts[a.id] = 0;
+    thanaOptions.forEach(([id]) => { counts[id] = 0; });
+    reviews.filter((r) => r.city === selectedCity).forEach((r) => {
+      const thanaId = r.thanaId || LEGACY_AREA_TO_THANA[r.areaId] || r.areaId;
+      if (counts[thanaId] !== undefined) counts[thanaId] += 1;
     });
-    reviews
-      .filter((r) => r.city === selectedCity)
-      .forEach((r) => {
-        if (counts[r.areaId] !== undefined) counts[r.areaId] += 1;
-      });
     return counts;
-  }, [reviews, selectedCity, activeCityAreas]);
+  }, [reviews, selectedCity, thanaOptions]);
 
   const filteredReviews = useMemo(() => {
     return reviews
       .filter((item) => {
         if (item.city !== selectedCity) return false;
-        if (selectedAreaId !== 'all' && item.areaId !== selectedAreaId) return false;
+        const itemThanaId = item.thanaId || LEGACY_AREA_TO_THANA[item.areaId] || item.areaId;
+        if (selectedAreaId !== 'all' && itemThanaId !== selectedAreaId) return false;
         if (selectedSubBlock !== 'all' && item.subBlock !== selectedSubBlock) return false;
         if (selectedTenantType !== 'All' && (item.houseType || item.tenantType) !== selectedTenantType) return false;
 
         if (searchQuery.trim() !== '') {
           const q = searchQuery.toLowerCase();
-          const areaObj = activeCityAreas.find((a) => a.id === item.areaId);
-          const searchable = `${areaObj?.bn || ''} ${areaObj?.en || ''} ${item.subBlock} ${item.road} ${item.houseName} ${item.reviewText}`.toLowerCase();
+          const thanaName = thanaOptions.find(([id]) => id === itemThanaId)?.[1] || '';
+          const searchable = `${thanaName} ${item.areaId} ${item.thanaId || ''} ${item.subBlock || ''} ${item.road || ''} ${item.houseName || ''} ${item.reviewText || ''}`.toLowerCase();
           return searchable.includes(q);
         }
         return true;
@@ -928,7 +980,7 @@ export default function App() {
     selectedTenantType,
     searchQuery,
     sortBy,
-    activeCityAreas
+    thanaOptions
   ]);
 
   const toggleCardExpand = (id) => {
@@ -1038,7 +1090,8 @@ export default function App() {
 
     const payload = {
       city: newReview.city,
-      areaId: newReview.areaId,
+      thanaId: newReview.thanaId || newReview.areaId,
+      areaId: newReview.thanaId || newReview.areaId,
       subBlock: newReview.subBlock,
       road: newReview.road.trim(),
       houseName: newReview.houseName.trim(),
@@ -1099,10 +1152,9 @@ export default function App() {
   ).length;
 
   const getAreaName = (cityKey, areaId) => {
-    const list = CITIES_LOCATIONS[cityKey] || CITIES_LOCATIONS.dhaka;
-    const found = list.find((a) => a.id === areaId);
-    if (!found) return areaId;
-    return lang === 'bn' ? found.bn : found.en;
+    const normalizedId = LEGACY_AREA_TO_THANA[areaId] || areaId;
+    const options = cityKey === 'dhaka' ? DHAKA_THANAS : CHITTAGONG_THANAS;
+    return options.find(([id]) => id === normalizedId)?.[1] || areaId || '';
   };
 
   // One ticker item per property, based on its average review rating.
@@ -1113,7 +1165,7 @@ export default function App() {
     reviews.forEach((review) => {
       const propertyKey = [
         review.city,
-        review.areaId,
+        review.thanaId || LEGACY_AREA_TO_THANA[review.areaId] || review.areaId,
         review.subBlock || '',
         (review.houseName || '').trim().toLowerCase(),
       ].join('::');
@@ -1123,7 +1175,7 @@ export default function App() {
       const current = properties.get(propertyKey) || {
         key: propertyKey,
         city: review.city,
-        areaId: review.areaId,
+        areaId: review.thanaId || LEGACY_AREA_TO_THANA[review.areaId] || review.areaId,
         subBlock: review.subBlock,
         houseName: review.houseName,
         totalRating: 0,
@@ -1423,109 +1475,57 @@ export default function App() {
               </div>
             </section>
 
-            {/* HIERARCHICAL AREA & BLOCK EXPLORER */}
+            {/* CITY → THANA → AREA FILTERS */}
             <section className="bg-[#F1F5F9] rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  {selectedCity === 'dhaka' ? 'ঢাকা' : 'চট্টগ্রাম'} — {t.step1AreaTitle}
-                </span>
-
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm sm:text-base font-extrabold text-slate-800 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    {lang === 'bn' ? 'এলাকা অনুযায়ী বাসার রিভিউ খুঁজুন' : 'Find reviews by location'}
+                  </h2>
+                  <p className="text-[11px] text-slate-500 mt-1">{lang === 'bn' ? 'শহর, থানা ও এলাকা নির্বাচন করুন' : 'Choose a city, thana and area'}</p>
+                </div>
                 {(selectedAreaId !== 'all' || selectedSubBlock !== 'all' || searchQuery) && (
-                  <button
-                    onClick={() => {
-                      setSelectedAreaId('all');
-                      setSelectedSubBlock('all');
-                      setSearchQuery('');
-                    }}
-                    className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
-                  >
+                  <button onClick={() => { setSelectedAreaId('all'); setSelectedSubBlock('all'); setSearchQuery(''); }} className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer shrink-0">
                     {t.clearFilters}
                   </button>
                 )}
               </div>
 
-              {/* Step 1: Area pills */}
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                <button
-                  onClick={() => handleSelectArea('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                    selectedAreaId === 'all'
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-200'
-                  }`}
-                >
-                  <span>{t.allAreas}</span>
-                </button>
-
-                {activeCityAreas.map((area) => {
-                  const isSelected = selectedAreaId === area.id;
-                  const count = areaCounts[area.id] || 0;
-                  return (
-                    <button
-                      key={area.id}
-                      onClick={() => handleSelectArea(area.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                        isSelected
-                          ? 'bg-emerald-600 text-white shadow-2xs'
-                          : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-200'
-                      }`}
-                    >
-                      <span>{lang === 'bn' ? area.bn : area.en}</span>
-                      {count > 0 && (
-                        <span
-                          className={`text-[10px] px-1.5 rounded-full ${
-                            isSelected
-                              ? 'bg-emerald-700 text-emerald-100'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}
-                        >
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label className="block text-xs font-semibold text-slate-700">
+                  {lang === 'bn' ? 'শহর (City)' : 'City'}
+                  <select value={selectedCity} onChange={(e) => handleSelectCity(e.target.value)} className="mt-1.5 w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-800">
+                    <option value="dhaka">{lang === 'bn' ? 'ঢাকা' : 'Dhaka'}</option>
+                    <option value="chittagong">{lang === 'bn' ? 'চট্টগ্রাম' : 'Chittagong'}</option>
+                  </select>
+                </label>
+                <label className="block text-xs font-semibold text-slate-700">
+                  {lang === 'bn' ? 'থানা (Thana)' : 'Thana'}
+                  <select value={selectedAreaId} onChange={(e) => handleSelectArea(e.target.value)} className="mt-1.5 w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-800">
+                    <option value="all">{lang === 'bn' ? 'সব থানা' : 'All thanas'}</option>
+                    {thanaOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                  </select>
+                </label>
+                <label className="block text-xs font-semibold text-slate-700">
+                  {lang === 'bn' ? 'এলাকা (Area)' : 'Area'}
+                  <select value={selectedSubBlock} onChange={(e) => setSelectedSubBlock(e.target.value)} disabled={selectedAreaId === 'all'} className="mt-1.5 w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-800 disabled:bg-slate-100 disabled:text-slate-400">
+                    <option value="all">{lang === 'bn' ? 'সব এলাকা' : 'All areas'}</option>
+                    {areaOptionsForFilter.map((area) => <option key={area} value={area}>{area}</option>)}
+                  </select>
+                </label>
               </div>
 
-              {/* Step 2: Sub-blocks / Sectors Tray */}
-              {activeAreaObj && (
-                <div className="pt-3 border-t border-slate-200/80 bg-[#E2E8F0]/70 -mx-4 sm:-mx-5 px-4 sm:px-5 pb-2 rounded-b-xl space-y-2">
-                  <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-                    <Compass className="w-3.5 h-3.5 text-emerald-600" />
-                    {lang === 'bn' ? activeAreaObj.bn : activeAreaObj.en} — {t.step2BlockTitle}:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    <button
-                      onClick={() => setSelectedSubBlock('all')}
-                      className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
-                        selectedSubBlock === 'all'
-                          ? 'bg-slate-800 text-white'
-                          : 'bg-white text-slate-700 border border-slate-200'
-                      }`}
-                    >
-                      {t.allBlocks}
-                    </button>
-
-                    {activeAreaObj.blocks.map((block) => {
-                      const isBlockSelected = selectedSubBlock === block.id;
-                      return (
-                        <button
-                          key={block.id}
-                          onClick={() => setSelectedSubBlock(block.id)}
-                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
-                            isBlockSelected
-                              ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
-                              : 'bg-white text-slate-700 border border-slate-200 hover:border-emerald-400'
-                          }`}
-                        >
-                          {lang === 'bn' ? block.bn : block.en}
-                        </button>
-                      );
-                    })}
+              {selectedAreaId !== 'all' && areaOptionsForFilter.length > 0 && (
+                <div className="pt-3 border-t border-slate-200/80 space-y-2">
+                  <p className="text-[11px] font-bold text-slate-600">{lang === 'bn' ? 'জনপ্রিয় / পাওয়া যাওয়া এলাকা' : 'Popular / available areas'}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button onClick={() => setSelectedSubBlock('all')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${selectedSubBlock === 'all' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'}`}>{lang === 'bn' ? 'সব এলাকা' : 'All areas'}</button>
+                    {areaOptionsForFilter.slice(0, 12).map((area) => <button key={area} onClick={() => setSelectedSubBlock(area)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${selectedSubBlock === area ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400'}`}>{area}</button>)}
                   </div>
                 </div>
               )}
+              {selectedAreaId !== 'all' && areaOptionsForFilter.length === 0 && <p className="text-xs text-slate-500">{lang === 'bn' ? 'এই থানার নির্দিষ্ট এলাকার রিভিউ এখনো নেই। সব এলাকা দেখানো হচ্ছে।' : 'No locality-specific reviews yet. Showing all reviews in this thana.'}</p>}
             </section>
 
             {/* LOWEST-RATED PROPERTY NEWS TICKER */}
@@ -1607,7 +1607,7 @@ export default function App() {
                             <div className="flex flex-wrap items-center gap-1.5 text-xs">
                               <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
                                 {review.city === 'dhaka' ? 'ঢাকা' : 'চট্টগ্রাম'} :{' '}
-                                {getAreaName(review.city, review.areaId)}
+                                {getAreaName(review.city, review.thanaId || LEGACY_AREA_TO_THANA[review.areaId] || review.areaId)}
                               </span>
                               <span className="text-slate-400">/</span>
                               <span className="font-semibold text-slate-700">{review.subBlock}</span>
@@ -1844,69 +1844,33 @@ export default function App() {
         </>
       )}
 
-      {/* AREAS DIRECTORY TAB */}
+      {/* THANA & AREA DIRECTORY TAB */}
       {activeTab === 'areas' && (
         <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
-              {selectedCity === 'dhaka'
-                ? 'ঢাকা শহরের এলাকা ও ব্লক'
-                : 'চট্টগ্রাম শহরের এলাকা ও ব্লক'}
-            </h2>
-            <div className="flex bg-[#F1F5F9] p-1 rounded-xl text-xs font-semibold border border-slate-200">
-              <button
-                onClick={() => setSelectedCity('dhaka')}
-                className={`px-3 py-1.5 rounded-lg ${
-                  selectedCity === 'dhaka' ? 'bg-white shadow-2xs' : 'text-slate-600'
-                }`}
-              >
-                ঢাকা
-              </button>
-              <button
-                onClick={() => setSelectedCity('chittagong')}
-                className={`px-3 py-1.5 rounded-lg ${
-                  selectedCity === 'chittagong' ? 'bg-white shadow-2xs' : 'text-slate-600'
-                }`}
-              >
-                চট্টগ্রাম
-              </button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">{lang === 'bn' ? 'থানা ও এলাকার তালিকা' : 'Thana & area directory'}</h2>
+              <p className="text-xs text-slate-500 mt-1">{lang === 'bn' ? 'থানা নির্বাচন করে সংশ্লিষ্ট রিভিউ দেখুন' : 'Choose a thana to browse its reviews'}</p>
+            </div>
+            <div className="flex bg-[#F1F5F9] p-1 rounded-xl text-xs font-semibold border border-slate-200 self-start">
+              <button onClick={() => { setSelectedCity('dhaka'); setSelectedAreaId('all'); setSelectedSubBlock('all'); }} className={`px-3 py-1.5 rounded-lg ${selectedCity === 'dhaka' ? 'bg-white shadow-2xs' : 'text-slate-600'}`}>ঢাকা</button>
+              <button onClick={() => { setSelectedCity('chittagong'); setSelectedAreaId('all'); setSelectedSubBlock('all'); }} className={`px-3 py-1.5 rounded-lg ${selectedCity === 'chittagong' ? 'bg-white shadow-2xs' : 'text-slate-600'}`}>চট্টগ্রাম</button>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activeCityAreas.map((area) => (
-              <div
-                key={area.id}
-                className="bg-[#F1F5F9] rounded-2xl border border-slate-200 p-5 space-y-3 shadow-2xs"
-              >
-                <button
-                  onClick={() => {
-                    setSelectedAreaId(area.id);
-                    setActiveTab('explore');
-                  }}
-                  className="text-base font-bold text-slate-900 hover:text-emerald-600 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  <span>{lang === 'bn' ? area.bn : area.en}</span>
-                  <ArrowUpRight className="w-4 h-4 text-slate-400" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {thanaOptions.map(([id, name]) => {
+              const count = areaCounts[id] || 0;
+              const localities = selectedCity === 'dhaka' ? (DHAKA_AREA_SUGGESTIONS[id] || []) : [];
+              const reviewAreas = reviews.filter((r) => r.city === selectedCity && (r.thanaId || LEGACY_AREA_TO_THANA[r.areaId] || r.areaId) === id).map((r) => r.subBlock).filter(Boolean);
+              const chips = [...new Set([...localities, ...reviewAreas])].slice(0, 5);
+              return <article key={id} className="bg-[#F1F5F9] rounded-2xl border border-slate-200 p-4 space-y-3">
+                <button onClick={() => { setSelectedAreaId(id); setSelectedSubBlock('all'); setActiveTab('explore'); }} className="w-full flex items-center justify-between gap-2 text-left">
+                  <span className="font-bold text-slate-900 flex items-center gap-2"><MapPin className="w-4 h-4 text-emerald-600" />{name}</span>
+                  <span className="text-[10px] font-bold bg-white border border-slate-200 rounded-full px-2 py-1 text-slate-600">{count} {lang === 'bn' ? 'রিভিউ' : 'reviews'}</span>
                 </button>
-                <div className="flex flex-wrap gap-1.5">
-                  {area.blocks.map((block) => (
-                    <button
-                      key={block.id}
-                      onClick={() => {
-                        setSelectedAreaId(area.id);
-                        setSelectedSubBlock(block.id);
-                        setActiveTab('explore');
-                      }}
-                      className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200 transition cursor-pointer"
-                    >
-                      {lang === 'bn' ? block.bn : block.en}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+                {chips.length > 0 ? <div className="flex flex-wrap gap-1.5">{chips.map((area) => <button key={area} onClick={() => { setSelectedAreaId(id); setSelectedSubBlock(area); setActiveTab('explore'); }} className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-200">{area}</button>)}</div> : <p className="text-[11px] text-slate-500">{lang === 'bn' ? 'এলাকার রিভিউ যোগ হলে এখানে দেখা যাবে' : 'Localities will appear as reviews are added'}</p>}
+              </article>;
+            })}
           </div>
         </main>
       )}
@@ -1977,7 +1941,7 @@ export default function App() {
                   {[
                     ['সার্বিক রেটিং', selectedReviewForDetails.overallRating],
                     ['বাড়িওয়ালার রেটিং', selectedReviewForDetails.landlordRating],
-                    ['ইউটিলিটি রেটিং', selectedReviewForDetails.utilityRating],
+                    ['এলাকার সার্বিক পরিবেশ', selectedReviewForDetails.utilityRating],
                     ['নিরাপত্তা রেটিং', selectedReviewForDetails.securityRating],
                   ].filter(([, value]) => value !== undefined && value !== null && value !== '').map(([label, value]) => (
                     <div key={label} className="bg-white border border-slate-200 rounded-xl p-3">
@@ -2056,11 +2020,13 @@ export default function App() {
                     onChange={(e) => {
                       const c = e.target.value;
                       const firstArea = CITIES_LOCATIONS[c][0];
+                      const firstThana = c === 'dhaka' ? DHAKA_THANAS[0][0] : firstArea.id;
                       setNewReview({
                         ...newReview,
                         city: c,
-                        areaId: firstArea.id,
-                        subBlock: firstArea.blocks[0].id
+                        thanaId: firstThana,
+                        areaId: firstThana,
+                        subBlock: ''
                       });
                     }}
                     className="w-full bg-[#F1F5F9] border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium"
@@ -2072,44 +2038,32 @@ export default function App() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    এলাকা (Area) *
+                    থানা (Thana) *
                   </label>
                   <select
-                    value={newReview.areaId}
-                    onChange={(e) => {
-                      const nextAreaId = e.target.value;
-                      const foundArea = modalCityAreas.find((a) => a.id === nextAreaId);
-                      setNewReview({
-                        ...newReview,
-                        areaId: nextAreaId,
-                        subBlock: foundArea?.blocks[0]?.id || ''
-                      });
-                    }}
+                    required
+                    value={newReview.thanaId || newReview.areaId}
+                    onChange={(e) => setNewReview({ ...newReview, thanaId: e.target.value, areaId: e.target.value, subBlock: '' })}
                     className="w-full bg-[#F1F5F9] border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium"
                   >
-                    {modalCityAreas.map((area) => (
-                      <option key={area.id} value={area.id}>
-                        {lang === 'bn' ? area.bn : area.en}
-                      </option>
+                    {(newReview.city === 'dhaka' ? DHAKA_THANAS : modalCityAreas.map((a) => [a.id, lang === 'bn' ? a.bn : a.en])).map(([id, name]) => (
+                      <option key={id} value={id}>{name}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    ব্লক / সেক্টর *
+                    এলাকা (Area) *
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    required
                     value={newReview.subBlock}
                     onChange={(e) => setNewReview({ ...newReview, subBlock: e.target.value })}
+                    placeholder={lang === 'bn' ? 'যেমন: মিরপুর-১, কাজীপাড়া, শেওড়াপাড়া' : 'e.g. Mirpur 1, Kazipara, Shewrapara'}
                     className="w-full bg-[#F1F5F9] border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium"
-                  >
-                    {modalAreaObj.blocks.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {lang === 'bn' ? b.bn : b.en}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -2185,7 +2139,7 @@ export default function App() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">সার্বিক ইউটিলিটি রেটিং (১–১০) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">এলাকার সার্বিক পরিবেশ (১–১০) *</label>
                   <select required value={newReview.utilityRating} onChange={(e) => setNewReview({ ...newReview, utilityRating: e.target.value })} className="w-full bg-[#F1F5F9] border border-slate-300 rounded-lg px-3 py-2">
                     <option value="">রেটিং নির্বাচন করুন</option>
                     {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{n} / 10</option>)}

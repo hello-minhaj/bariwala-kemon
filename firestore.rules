@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -25,6 +24,86 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid;
     }
 
+    function validOptionalMoney(value) {
+      return value == null
+        || ((value is int || value is float) && value >= 0);
+    }
+
+    function validReviewCreate() {
+      return ownsDocument()
+        && request.resource.data.keys().hasAll([
+          'city', 'thanaId', 'areaId', 'subBlock', 'road',
+          'houseName', 'houseType', 'floorUnit', 'tenantType',
+          'rent', 'serviceCharge', 'stayDuration',
+          'overallRating', 'landlordRating', 'utilityRating', 'securityRating',
+          'waterStatus', 'gasStatus', 'gateClosingTime',
+          'leaveReason', 'leaveCategory', 'tags', 'reviewText',
+          'reviewerAlias', 'upvotes', 'createdAt', 'replies',
+          'status', 'ownerUid'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'city', 'thanaId', 'areaId', 'subBlock', 'road',
+          'houseName', 'houseType', 'floorUnit', 'tenantType',
+          'rent', 'serviceCharge', 'stayDuration',
+          'overallRating', 'landlordRating', 'utilityRating', 'securityRating',
+          'waterStatus', 'gasStatus', 'gateClosingTime',
+          'leaveReason', 'leaveCategory', 'tags', 'reviewText',
+          'reviewerAlias', 'upvotes', 'createdAt', 'replies',
+          'status', 'ownerUid'
+        ])
+        && request.resource.data.city in ['dhaka', 'chittagong']
+        && request.resource.data.thanaId is string
+        && request.resource.data.thanaId.size() >= 1
+        && request.resource.data.thanaId.size() <= 80
+        && request.resource.data.areaId is string
+        && request.resource.data.areaId.size() >= 1
+        && request.resource.data.areaId.size() <= 80
+        && request.resource.data.subBlock is string
+        && request.resource.data.subBlock.size() >= 1
+        && request.resource.data.subBlock.size() <= 120
+        && request.resource.data.road is string
+        && request.resource.data.road.size() <= 120
+        && request.resource.data.houseName is string
+        && request.resource.data.houseName.size() >= 1
+        && request.resource.data.houseName.size() <= 120
+        && request.resource.data.houseType in [
+          'Family', 'Male bachelor', 'Female bachelor', 'Sublet'
+        ]
+        && request.resource.data.floorUnit is string
+        && request.resource.data.floorUnit.size() <= 80
+        && request.resource.data.tenantType == request.resource.data.houseType
+        && validOptionalMoney(request.resource.data.rent)
+        && validOptionalMoney(request.resource.data.serviceCharge)
+        && request.resource.data.stayDuration is string
+        && request.resource.data.stayDuration.size() <= 80
+        && validRating(request.resource.data.overallRating)
+        && validRating(request.resource.data.landlordRating)
+        && validRating(request.resource.data.utilityRating)
+        && validRating(request.resource.data.securityRating)
+        && request.resource.data.waterStatus is string
+        && request.resource.data.waterStatus.size() <= 80
+        && request.resource.data.gasStatus is string
+        && request.resource.data.gasStatus.size() <= 80
+        && request.resource.data.gateClosingTime is string
+        && request.resource.data.gateClosingTime.size() <= 80
+        && request.resource.data.leaveReason is string
+        && request.resource.data.leaveReason.size() <= 160
+        && request.resource.data.leaveCategory is string
+        && request.resource.data.leaveCategory.size() <= 40
+        && request.resource.data.tags is list
+        && request.resource.data.tags.size() <= 5
+        && request.resource.data.reviewText is string
+        && request.resource.data.reviewText.size() >= 1
+        && request.resource.data.reviewText.size() <= 3000
+        && request.resource.data.reviewerAlias is string
+        && request.resource.data.reviewerAlias.size() <= 40
+        && request.resource.data.upvotes == 0
+        && request.resource.data.createdAt is string
+        && request.resource.data.status == 'pending'
+        && request.resource.data.replies is list
+        && request.resource.data.replies.size() == 0;
+    }
+
     function validReviewModerationUpdate() {
       return isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
@@ -40,6 +119,25 @@ service cloud.firestore {
         );
     }
 
+    function validCommentCreate() {
+      return signedIn()
+        && request.resource.data.keys().hasAll([
+          'text', 'authorAlias', 'ownerUid', 'status', 'createdAt', 'timeAgo'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'text', 'authorAlias', 'ownerUid', 'status', 'createdAt', 'timeAgo'
+        ])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 3
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.authorAlias is string
+        && request.resource.data.authorAlias.size() <= 40
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.timeAgo is string;
+    }
+
     function validCommentModerationUpdate() {
       return isAdmin()
         && resource.data.status == 'pending'
@@ -53,33 +151,15 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
       allow read: if isAdmin() || resource.data.status == 'approved';
-
-      allow create: if ownsDocument()
-        && request.resource.data.status == 'pending'
-        && request.resource.data.houseName is string
-        && request.resource.data.houseName.size() >= 1
-        && request.resource.data.houseName.size() <= 120
-        && request.resource.data.reviewText is string
-        && request.resource.data.reviewText.size() <= 3000
-        && validRating(request.resource.data.overallRating)
-        && validRating(request.resource.data.landlordRating)
-        && validRating(request.resource.data.utilityRating)
-        && validRating(request.resource.data.securityRating);
-
+      allow create: if validReviewCreate();
       allow update: if validReviewModerationUpdate();
       allow delete: if false;
 
       match /comments/{commentId} {
         allow read: if isAdmin() || resource.data.status == 'approved';
 
-        allow create: if signedIn()
-          && request.resource.data.ownerUid == request.auth.uid
-          && request.resource.data.status == 'pending'
-          && request.resource.data.text is string
-          && request.resource.data.text.size() >= 3
-          && request.resource.data.text.size() <= 1000
-          && request.resource.data.authorAlias is string
-          && request.resource.data.authorAlias.size() <= 40;
+        allow create: if validCommentCreate()
+          && get(/databases/$(database)/documents/reviews/$(reviewId)).data.status == 'approved';
 
         allow update: if validCommentModerationUpdate();
         allow delete: if false;
@@ -87,14 +167,8 @@ service cloud.firestore {
         match /replies/{replyId} {
           allow read: if isAdmin() || resource.data.status == 'approved';
 
-          allow create: if signedIn()
-            && request.resource.data.ownerUid == request.auth.uid
-            && request.resource.data.status == 'pending'
-            && request.resource.data.text is string
-            && request.resource.data.text.size() >= 3
-            && request.resource.data.text.size() <= 1000
-            && request.resource.data.authorAlias is string
-            && request.resource.data.authorAlias.size() <= 40;
+          allow create: if validCommentCreate()
+            && get(/databases/$(database)/documents/reviews/$(reviewId)/comments/$(commentId)).data.status == 'approved';
 
           allow update: if validCommentModerationUpdate();
           allow delete: if false;
@@ -106,7 +180,9 @@ service cloud.firestore {
 
         allow create: if signedIn()
           && request.auth.uid == userId
-          && request.resource.data.ownerUid == request.auth.uid;
+          && request.resource.data.keys().hasOnly(['ownerUid', 'createdAt'])
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.createdAt is timestamp;
 
         allow delete: if signedIn()
           && request.auth.uid == userId;
