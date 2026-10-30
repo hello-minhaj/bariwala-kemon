@@ -1,0 +1,118 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function validRating(value) {
+      return (value is int || value is float)
+        && value >= 1
+        && value <= 10;
+    }
+
+    function ownsDocument() {
+      return signedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    function validReviewModerationUpdate() {
+      return isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && (
+          (resource.data.status == 'pending'
+            && request.resource.data.status in ['approved', 'rejected'])
+          ||
+          (resource.data.status == 'approved'
+            && request.resource.data.status == 'archived')
+          ||
+          (resource.data.status == 'archived'
+            && request.resource.data.status == 'approved')
+        );
+    }
+
+    function validCommentModerationUpdate() {
+      return isAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['approved', 'rejected']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+
+    match /admins/{adminUid} {
+      allow read, write: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if isAdmin() || resource.data.status == 'approved';
+
+      allow create: if ownsDocument()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.houseName is string
+        && request.resource.data.houseName.size() >= 1
+        && request.resource.data.houseName.size() <= 120
+        && request.resource.data.reviewText is string
+        && request.resource.data.reviewText.size() <= 3000
+        && validRating(request.resource.data.overallRating)
+        && validRating(request.resource.data.landlordRating)
+        && validRating(request.resource.data.utilityRating)
+        && validRating(request.resource.data.securityRating);
+
+      allow update: if validReviewModerationUpdate();
+      allow delete: if false;
+
+      match /comments/{commentId} {
+        allow read: if isAdmin() || resource.data.status == 'approved';
+
+        allow create: if signedIn()
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 3
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.authorAlias is string
+          && request.resource.data.authorAlias.size() <= 40;
+
+        allow update: if validCommentModerationUpdate();
+        allow delete: if false;
+
+        match /replies/{replyId} {
+          allow read: if isAdmin() || resource.data.status == 'approved';
+
+          allow create: if signedIn()
+            && request.resource.data.ownerUid == request.auth.uid
+            && request.resource.data.status == 'pending'
+            && request.resource.data.text is string
+            && request.resource.data.text.size() >= 3
+            && request.resource.data.text.size() <= 1000
+            && request.resource.data.authorAlias is string
+            && request.resource.data.authorAlias.size() <= 40;
+
+          allow update: if validCommentModerationUpdate();
+          allow delete: if false;
+        }
+      }
+
+      match /likes/{userId} {
+        allow read: if signedIn();
+
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.ownerUid == request.auth.uid;
+
+        allow delete: if signedIn()
+          && request.auth.uid == userId;
+
+        allow update: if false;
+      }
+    }
+  }
+}
