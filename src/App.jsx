@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
+  House,
   MapPin,
   Shield,
   MessageSquare,
@@ -1161,7 +1162,7 @@ export default function App() {
 
       {/* NAVBAR */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
-        <div className="relative max-w-7xl mx-auto w-full px-3 sm:px-6 py-3 sm:py-0 min-h-20 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="relative max-w-7xl mx-auto w-full px-2.5 sm:px-6 h-[68px] sm:min-h-20 sm:h-auto py-0 sm:py-0 flex flex-nowrap items-center justify-between gap-2 sm:gap-4">
           
           {/* FAR LEFT: LOGO & BRAND NAME */}
           <button
@@ -1170,15 +1171,15 @@ export default function App() {
               setSelectedAreaId('all');
               setSelectedSubBlock('all');
             }}
-            className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none shrink-0"
+            className="flex items-center gap-2 sm:gap-3 text-left group cursor-pointer focus:outline-none shrink-0 min-w-0"
           >
-            <BariwalaBrandIcon className="w-10 h-10 transition-transform duration-200 group-hover:scale-105 shrink-0 shadow-sm rounded-xl" />
+            <BariwalaBrandIcon className="w-9 h-9 sm:w-10 sm:h-10 transition-transform duration-200 group-hover:scale-105 shrink-0 shadow-sm rounded-xl" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base sm:text-xl tracking-tight text-slate-900">
+                <span className="font-extrabold text-[13px] sm:text-xl tracking-tight text-slate-900 whitespace-nowrap">
                   {t.brandName}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs whitespace-nowrap">
                   {selectedCity === 'dhaka'
                     ? lang === 'bn'
                       ? 'ঢাকা'
@@ -1226,7 +1227,7 @@ export default function App() {
           </nav>
 
           {/* FAR RIGHT: ACTIONS & SEPARATED LANGUAGE SWITCHER */}
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               onClick={() => setIsWriteModalOpen(true)}
               className="hidden md:flex items-center gap-1.5 bg-slate-900 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-md cursor-pointer"
@@ -1237,10 +1238,10 @@ export default function App() {
             </button>
 
             {/* SEPARATED LANGUAGE SWITCHER CONTAINER */}
-            <div className="flex items-center gap-1.5 bg-[#F1F5F9] p-1.5 rounded-2xl border border-slate-300 shadow-2xs">
+            <div className="flex items-center gap-0.5 sm:gap-1.5 bg-[#F1F5F9] p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-300 shadow-2xs shrink-0">
               <button
                 onClick={() => setLang('bn')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition cursor-pointer whitespace-nowrap ${
                   lang === 'bn'
                     ? 'bg-slate-900 text-white shadow-2xs'
                     : 'bg-transparent text-slate-700 hover:bg-slate-200'
@@ -1250,7 +1251,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setLang('en')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                className={`px-2 sm:px-3 py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition cursor-pointer whitespace-nowrap ${
                   lang === 'en'
                     ? 'bg-slate-900 text-white shadow-2xs'
                     : 'bg-transparent text-slate-700 hover:bg-slate-200'
@@ -1271,13 +1272,6 @@ export default function App() {
       >
         <div className="grid grid-cols-4 gap-1">
           <button
-            onClick={() => setIsWriteModalOpen(true)}
-            className="min-w-0 flex flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] sm:text-xs font-bold leading-tight text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800 cursor-pointer"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="text-center">{t.shareBtn}</span>
-          </button>
-          <button
             onClick={() => setActiveTab('explore')}
             className={`min-w-0 flex flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] sm:text-xs font-bold leading-tight transition cursor-pointer ${
               activeTab === 'explore'
@@ -1285,8 +1279,15 @@ export default function App() {
                 : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-800'
             }`}
           >
-            <Search className="w-5 h-5" />
-            <span className="text-center">{t.navExplore}</span>
+            <House className="w-5 h-5" />
+            <span className="text-center">{lang === 'bn' ? 'হোম' : 'Home'}</span>
+          </button>
+          <button
+            onClick={() => setIsWriteModalOpen(true)}
+            className="min-w-0 flex flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] sm:text-xs font-bold leading-tight text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800 cursor-pointer"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="text-center">{t.shareBtn}</span>
           </button>
           <button
             onClick={() => setActiveTab('areas')}
