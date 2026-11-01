@@ -1066,7 +1066,7 @@ export default function App() {
 
   const handleCreateReview = async (e) => {
     e.preventDefault();
-    if (!newReview.houseName.trim() || !newReview.reviewText.trim()) return;
+    if (!newReview.houseName.trim()) return;
 
     const { cleaned: cleanedReviewText } = sanitizeAndCheckContent(newReview.reviewText);
 
@@ -2164,6 +2164,7 @@ export default function App() {
                   <select required value={newReview.leaveCategory} onChange={(e) => {
                     const value = e.target.value;
                     const reasons = {
+                      current: 'এখনো থাকছি',
                       personal: 'নিজ প্রয়োজনে / অফিস পরিবর্তন',
                       rent: 'ভাড়া বা অতিরিক্ত চার্জ',
                       landlord: 'বাড়িওয়ালার আচরণ',
@@ -2174,7 +2175,7 @@ export default function App() {
                     };
                     setNewReview({ ...newReview, leaveCategory: value, leaveReason: reasons[value] || '' });
                   }} className="w-full bg-[#F1F5F9] border border-slate-300 rounded-lg px-3 py-2">
-                    <option value="">কারণ নির্বাচন করুন</option>
+                    <option value="">কারণ নির্বাচন করুন</option><option value="current">এখনো থাকছি</option>
                     <option value="personal">নিজ প্রয়োজনে / অফিস পরিবর্তন</option><option value="rent">ভাড়া বা অতিরিক্ত চার্জ</option><option value="landlord">বাড়িওয়ালার আচরণ</option><option value="utility">গ্যাস / পানি / বিদ্যুৎ সমস্যা</option><option value="security">নিরাপত্তা সমস্যা</option><option value="dispute">বাড়িওয়ালার সঙ্গে বিরোধ</option><option value="other">অন্যান্য কারণ</option>
                   </select>
                 </div>
@@ -2183,12 +2184,11 @@ export default function App() {
               <div className="space-y-2">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    বিস্তারিত অভিজ্ঞতা *
+                    বিস্তারিত অভিজ্ঞতা
                   </label>
                   <textarea
                     rows={3}
-                    required
-                    placeholder="বাড়িওয়ালার ব্যবহার, গ্যাস-পানি কেমন..."
+                    placeholder="বাড়িওয়ালার ব্যবহার, গ্যাস-পানি কেমন... (ঐচ্ছিক)"
                     value={newReview.reviewText}
                     onChange={(e) => setNewReview({ ...newReview, reviewText: e.target.value })}
                     className="w-full bg-[#F1F5F9] border border-slate-300 rounded-lg p-3 text-base sm:text-lg leading-relaxed"
