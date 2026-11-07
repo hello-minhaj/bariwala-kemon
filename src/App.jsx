@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search,
   House,
@@ -20,7 +20,9 @@ import {
   CornerDownRight,
   X,
   Users,
-  Facebook
+  Facebook,
+  ClipboardList,
+  Eye
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -42,6 +44,7 @@ import {
   doc,
   deleteDoc,
   setDoc,
+  increment,
   serverTimestamp
 } from 'firebase/firestore';
 
@@ -336,6 +339,7 @@ const UI_TEXT = {
     allBlocks: 'সব ব্লক/সেক্টর',
     clearFilters: 'ফিল্টার মুছুন',
     statTotalReviews: 'মোট বাসার রিভিউ',
+    statVisits: 'মোট সাইট ভিজিট',
     statDepositAlert: 'কমিউনিটি কমেন্ট ও রিপ্লাই',
     statDisputeLeaves: 'ঝামেলায় বাসা ত্যাগ',
     metricRent: 'মাসিক ভাড়া ও চার্জ',
@@ -373,6 +377,7 @@ const UI_TEXT = {
     allBlocks: 'All Blocks/Sectors',
     clearFilters: 'Reset Filters',
     statTotalReviews: 'Total Flat Reviews',
+    statVisits: 'Total site visits',
     statDepositAlert: 'Community Replies',
     statDisputeLeaves: 'Left Due to Dispute',
     metricRent: 'Monthly Rent & Charge',
@@ -740,23 +745,163 @@ function AdminDashboard({ auth, db }) {
 }
 
 
+// ---- Smart search: finds Bangla data using English / "Banglish" spellings too ----
+const BN_DIGIT_MAP = { '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9' };
+const BN_CONSONANT_KEY = {
+  'ক': 'k', 'খ': 'k', 'গ': 'g', 'ঘ': 'g', 'ঙ': 'n', 'চ': 'c', 'ছ': 'c', 'জ': 'j', 'ঝ': 'j', 'ঞ': 'n',
+  'ট': 't', 'ঠ': 't', 'ড': 'd', 'ঢ': 'd', 'ণ': 'n', 'ত': 't', 'থ': 't', 'দ': 'd', 'ধ': 'd', 'ন': 'n',
+  'প': 'p', 'ফ': 'p', 'ব': 'b', 'ভ': 'b', 'ম': 'm', 'য': 'j', 'র': 'r', 'ল': 'l', 'শ': 's', 'ষ': 's', 'স': 's',
+  'ৎ': 't', 'ং': 'n'
+};
+const LATIN_DIGRAPH_KEY = { ph: 'p', bh: 'b', kh: 'k', gh: 'g', jh: 'j', th: 't', dh: 'd', sh: 's', ch: 'c', ng: 'n' };
+const BN_INDEPENDENT_VOWELS = 'অআইঈউঊঋএঐওঔ';
+
+function toAsciiDigits(str) {
+  return str.replace(/[০-৯]/g, (d) => BN_DIGIT_MAP[d]);
+}
+
+function normalizeSearchText(str) {
+  return toAsciiDigits(String(str || '').normalize('NFC').toLowerCase())
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+// Reduces a Bangla or English word to a rough consonant "sound key", e.g.
+// "mirpur" and "মিরপুর" both become "mrpr", "Dhanmondi" and "ধানমন্ডি" both become "dnmnd".
+function phoneticKey(word) {
+  let w = toAsciiDigits(String(word).normalize('NFC').toLowerCase());
+  w = w
+    .replace(/\u09A1\u09BC|\u09DC/g, 'র')
+    .replace(/\u09A2\u09BC|\u09DD/g, 'র')
+    .replace(/\u09AF\u09BC|\u09DF/g, '');
+  const startsWithVowel = /^[aeiouw]/.test(w) || (w.length > 0 && BN_INDEPENDENT_VOWELS.includes(w.charAt(0)));
+  let out = '';
+  const re = /ph|bh|kh|gh|jh|th|dh|sh|ch|ng|[\s\S]/g;
+  let m;
+  while ((m = re.exec(w))) {
+    const tok = m[0];
+    if (BN_CONSONANT_KEY[tok]) out += BN_CONSONANT_KEY[tok];
+    else if (LATIN_DIGRAPH_KEY[tok]) out += LATIN_DIGRAPH_KEY[tok];
+    else if (/[0-9]/.test(tok)) out += tok;
+    else if ('bdgjklmnprst'.includes(tok)) out += tok;
+    else if (tok === 'f') out += 'p';
+    else if (tok === 'v') out += 'b';
+    else if (tok === 'z') out += 'j';
+    else if (tok === 'q' || tok === 'c') out += 'k';
+    else if (tok === 'x') out += 'ks';
+    // vowels, vowel signs, hasanta, y, w, h add nothing
+  }
+  out = out.replace(/([a-z])\1+/g, '$1');
+  return (startsWithVowel ? 'a' : '') + out;
+}
+
+// Returns null for an empty query, otherwise a function(locationText, bodyText) -> boolean.
+// Every word typed must match: exactly (any script), or by sound against a location word.
+function makeSearchMatcher(rawQuery) {
+  const normalized = normalizeSearchText(rawQuery);
+  if (!normalized) return null;
+  const tokens = normalized.split(' ').filter(Boolean).map((plain) => ({ plain, key: phoneticKey(plain) }));
+  return (locationText, bodyText = '') => {
+    const loc = normalizeSearchText(locationText);
+    const body = normalizeSearchText(bodyText);
+    const locWordKeys = loc.split(' ').filter(Boolean).map(phoneticKey);
+    return tokens.every(({ plain, key }) =>
+      loc.includes(plain) ||
+      body.includes(plain) ||
+      (key.length >= 2 && /[a-z]/.test(key) && locWordKeys.some((wk) => wk.startsWith(key)))
+    );
+  };
+}
+
+// Counts one visit per browser per 30 minutes, so refreshes don't inflate the counter.
+function shouldCountVisit() {
+  const KEY = 'bk_last_visit';
+  const WINDOW_MS = 30 * 60 * 1000;
+  const now = Date.now();
+  try {
+    const last = Number(window.localStorage.getItem(KEY) || 0);
+    if (last && now - last < WINDOW_MS) return false;
+    window.localStorage.setItem(KEY, String(now));
+    return true;
+  } catch (err) {
+    try {
+      if (window.sessionStorage.getItem(KEY)) return false;
+      window.sessionStorage.setItem(KEY, '1');
+    } catch (err2) {
+      // Storage fully blocked: count it, the visit is real.
+    }
+    return true;
+  }
+}
+
+function CountUp({ value, className = '' }) {
+  const [shown, setShown] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const target = Number(value) || 0;
+    const reduce = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      fromRef.current = target;
+      setShown(target);
+      return undefined;
+    }
+    const from = fromRef.current;
+    const start = performance.now();
+    const duration = 900;
+    let raf;
+    const tick = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const next = Math.round(from + (target - from) * eased);
+      fromRef.current = next;
+      setShown(next);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <span className={className}>{shown.toLocaleString('en-IN')}</span>;
+}
+
+const REVIEW_STATUS_META = {
+  pending: { bn: 'যাচাইয়ের অপেক্ষায়', en: 'Awaiting moderation', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
+  approved: { bn: 'প্রকাশিত', en: 'Published', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  rejected: { bn: 'প্রকাশ করা হয়নি', en: 'Not published', cls: 'bg-rose-50 text-rose-800 border-rose-200' },
+  archived: { bn: 'আর্কাইভড', en: 'Archived', cls: 'bg-slate-100 text-slate-700 border-slate-300' },
+};
+
+function ReviewSkeleton() {
+  return (
+    <div
+      className="bg-[#F1F5F9] rounded-2xl border border-slate-200/90 p-5 sm:p-6 space-y-4 animate-pulse"
+      aria-hidden="true"
+    >
+      <div className="flex justify-between gap-3">
+        <div className="space-y-2 flex-1">
+          <div className="h-3 w-40 bg-slate-200 rounded" />
+          <div className="h-5 w-3/5 bg-slate-200 rounded" />
+        </div>
+        <div className="h-12 w-16 bg-slate-200 rounded-xl" />
+      </div>
+      <div className="h-3 w-full bg-slate-200 rounded" />
+      <div className="h-3 w-5/6 bg-slate-200 rounded" />
+      <div className="flex gap-2">
+        <div className="h-8 w-20 bg-slate-200 rounded-lg" />
+        <div className="h-8 w-28 bg-slate-200 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [lang, setLang] = useState('bn');
   const t = UI_TEXT[lang];
   const [activeTab, setActiveTab] = useState('explore');
 
-  // Set Browser Favicon dynamically to match project brand icon SVG
+  // Keep <html lang> in sync with the language switcher (screen readers, hyphenation, fonts).
   useEffect(() => {
-    const svgFavicon = `data:image/svg+xml,<svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="36" height="36" rx="10" fill="%230F172A"/><path d="M7.5 17.5L18 9L28.5 17.5" stroke="%2310B981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 16V24.5C11 25.6046 11.8954 26.5 13 26.5H16.5L19.5 29L20.5 26.5H23C24.1046 26.5 25 25.6046 25 24.5V16" stroke="white" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.2 20.5L17.2 22.5L21.2 18.5" stroke="%2310B981" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    let link = document.querySelector("link[rel*='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.type = 'image/svg+xml';
-      link.rel = 'shortcut icon';
-      document.getElementsByTagName('head')[0].appendChild(link);
-    }
-    link.href = svgFavicon;
-  }, []);
+    document.documentElement.lang = lang === 'bn' ? 'bn' : 'en';
+  }, [lang]);
 
   const [selectedCity, setSelectedCity] = useState('dhaka');
   const activeCityAreas = CITIES_LOCATIONS[selectedCity] || CITIES_LOCATIONS.dhaka;
@@ -769,8 +914,26 @@ export default function App() {
   const [sortBy, setSortBy] = useState('helpful');
 
   const [user, setUser] = useState(null);
-  const [myAlias] = useState(() => `Tenant #${Math.floor(100 + Math.random() * 899)}`);
+  const [myAlias] = useState(() => {
+    const fresh = `Tenant #${Math.floor(100 + Math.random() * 899)}`;
+    try {
+      const saved = window.localStorage.getItem('bk_alias');
+      if (saved) return saved;
+      window.localStorage.setItem('bk_alias', fresh);
+    } catch (err) {
+      // Storage can be blocked (private mode); a per-session alias is fine then.
+    }
+    return fresh;
+  });
   const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(hasFirebaseConfig);
+  const [reviewsError, setReviewsError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [myReviews, setMyReviews] = useState([]);
+  const [myReviewsLoading, setMyReviewsLoading] = useState(hasFirebaseConfig);
+  const [myReviewsError, setMyReviewsError] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [siteVisits, setSiteVisits] = useState(null);
   const [commentsByReview, setCommentsByReview] = useState({});
   const [nestedRepliesByComment, setNestedRepliesByComment] = useState({});
   const [likeCounts, setLikeCounts] = useState({});
@@ -843,13 +1006,87 @@ export default function App() {
           ...reviewDoc.data(),
         }));
         setReviews(liveReviews);
+        setReviewsError(false);
+        setReviewsLoading(false);
       },
       (error) => {
         console.error('Could not load approved reviews:', error);
+        setReviewsError(true);
+        setReviewsLoading(false);
       }
     );
     return () => unsub();
+  }, [reloadKey]);
+
+  // The visitor's own submissions (any status), so they can see what happened to their review.
+  useEffect(() => {
+    if (!db) {
+      setMyReviewsLoading(false);
+      return undefined;
+    }
+    if (!user) {
+      setMyReviews([]);
+      return undefined;
+    }
+    setMyReviewsLoading(true);
+    const mine = query(collection(db, 'reviews'), where('ownerUid', '==', user.uid));
+    const unsub = onSnapshot(
+      mine,
+      (snapshot) => {
+        const items = snapshot.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setMyReviews(items);
+        setMyReviewsError(false);
+        setMyReviewsLoading(false);
+      },
+      (error) => {
+        console.error('Could not load my reviews:', error);
+        setMyReviewsError(true);
+        setMyReviewsLoading(false);
+      }
+    );
+    return () => unsub();
+  }, [user]);
+
+  // Live total-visits number shown in the stats strip.
+  useEffect(() => {
+    if (!db) return undefined;
+    return onSnapshot(
+      doc(db, 'stats', 'site'),
+      (snap) => setSiteVisits(snap.exists() ? Number(snap.data().visits) || 0 : 0),
+      (error) => console.error('Could not load visit count:', error)
+    );
   }, []);
+
+  // Count this visit once (per browser, per 30 minutes). Never counts the admin page.
+  useEffect(() => {
+    if (!db || !user) return;
+    if (window.location.pathname.replace(/\/$/, '') === '/admin') return;
+    if (!shouldCountVisit()) return;
+    setDoc(doc(db, 'stats', 'site'), { visits: increment(1) }, { merge: true }).catch((error) => {
+      console.error('Visit count failed:', error);
+      try { window.localStorage.removeItem('bk_last_visit'); } catch (err) { /* ignore */ }
+    });
+  }, [user]);
+
+  // Esc closes modals; page behind stops scrolling while one is open.
+  useEffect(() => {
+    if (!isWriteModalOpen && !selectedReviewForDetails) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setIsWriteModalOpen(false);
+        setSelectedReviewForDetails(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isWriteModalOpen, selectedReviewForDetails]);
 
   // Live approved comments for each published review. New comments remain pending until moderation.
   useEffect(() => {
@@ -949,6 +1186,7 @@ export default function App() {
   }, [reviews, selectedCity, thanaOptions]);
 
   const filteredReviews = useMemo(() => {
+    const matchSearch = makeSearchMatcher(searchQuery);
     return reviews
       .filter((item) => {
         if (item.city !== selectedCity) return false;
@@ -957,16 +1195,15 @@ export default function App() {
         if (selectedSubBlock !== 'all' && item.subBlock !== selectedSubBlock) return false;
         if (selectedTenantType !== 'All' && (item.houseType || item.tenantType) !== selectedTenantType) return false;
 
-        if (searchQuery.trim() !== '') {
-          const q = searchQuery.toLowerCase();
+        if (matchSearch) {
           const thanaName = thanaOptions.find(([id]) => id === itemThanaId)?.[1] || '';
-          const searchable = `${thanaName} ${item.areaId} ${item.thanaId || ''} ${item.subBlock || ''} ${item.road || ''} ${item.houseName || ''} ${item.reviewText || ''}`.toLowerCase();
-          return searchable.includes(q);
+          const locationText = `${thanaName} ${item.areaId || ''} ${item.thanaId || ''} ${item.subBlock || ''} ${item.road || ''} ${item.houseName || ''}`;
+          return matchSearch(locationText, item.reviewText || '');
         }
         return true;
       })
       .sort((a, b) => {
-        if (sortBy === 'helpful') return (b.upvotes || 0) - (a.upvotes || 0);
+        if (sortBy === 'helpful') return (likeCounts[b.id] ?? b.upvotes ?? 0) - (likeCounts[a.id] ?? a.upvotes ?? 0);
         if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
         if (sortBy === 'lowest') return a.overallRating - b.overallRating;
         if (sortBy === 'highest') return b.overallRating - a.overallRating;
@@ -980,8 +1217,67 @@ export default function App() {
     selectedTenantType,
     searchQuery,
     sortBy,
+    likeCounts,
     thanaOptions
   ]);
+
+  // Autocomplete: thanas and known localities that sound like what the visitor typed.
+  const searchSuggestions = useMemo(() => {
+    const matcher = makeSearchMatcher(searchQuery);
+    if (!matcher) return [];
+    const thanaOf = (r) => r.thanaId || LEGACY_AREA_TO_THANA[r.areaId] || r.areaId;
+    const cityReviews = reviews.filter((r) => r.city === selectedCity);
+    const items = [];
+    thanaOptions.forEach(([id, name]) => {
+      if (matcher(`${name} ${id}`)) {
+        items.push({ kind: 'thana', id, thanaId: id, label: name, count: cityReviews.filter((r) => thanaOf(r) === id).length });
+      }
+    });
+    if (selectedCity === 'dhaka') {
+      Object.entries(DHAKA_AREA_SUGGESTIONS).forEach(([thanaId, areas]) => {
+        areas.forEach((label) => {
+          if (matcher(label)) {
+            items.push({
+              kind: 'area',
+              id: `${thanaId}:${label}`,
+              thanaId,
+              label,
+              count: cityReviews.filter((r) => thanaOf(r) === thanaId && r.subBlock === label).length
+            });
+          }
+        });
+      });
+    }
+    return items.sort((a, b) => b.count - a.count).slice(0, 7);
+  }, [searchQuery, reviews, selectedCity, thanaOptions]);
+
+  const otherCityMatchCount = useMemo(() => {
+    const matcher = makeSearchMatcher(searchQuery);
+    if (!matcher) return 0;
+    const otherCity = selectedCity === 'dhaka' ? 'chittagong' : 'dhaka';
+    const options = otherCity === 'dhaka' ? DHAKA_THANAS : CHITTAGONG_THANAS;
+    return reviews.filter((item) => {
+      if (item.city !== otherCity) return false;
+      const thanaId = item.thanaId || LEGACY_AREA_TO_THANA[item.areaId] || item.areaId;
+      const thanaName = options.find(([id]) => id === thanaId)?.[1] || '';
+      return matcher(`${thanaName} ${item.areaId || ''} ${item.thanaId || ''} ${item.subBlock || ''} ${item.road || ''} ${item.houseName || ''}`, item.reviewText || '');
+    }).length;
+  }, [reviews, searchQuery, selectedCity]);
+
+  const scrollToResults = () => {
+    setSearchFocused(false);
+    if (typeof document === 'undefined') return;
+    requestAnimationFrame(() => {
+      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const pickSuggestion = (suggestion) => {
+    setSelectedAreaId(suggestion.thanaId);
+    setSelectedSubBlock(suggestion.kind === 'area' ? suggestion.label : 'all');
+    setSearchQuery('');
+    scrollToResults();
+  };
 
   const toggleCardExpand = (id) => {
     setExpandedCardIds((prev) =>
@@ -1124,9 +1420,26 @@ export default function App() {
     try {
       await addDoc(collection(db, 'reviews'), payload);
       setIsWriteModalOpen(false);
-      setSelectedCity(newReview.city);
-      setSelectedAreaId(newReview.areaId);
-      setSelectedSubBlock(newReview.subBlock);
+      setNewReview((prev) => ({
+        ...prev,
+        road: '',
+        houseName: '',
+        floorUnit: '',
+        rent: '',
+        serviceCharge: '',
+        stayDuration: '',
+        landlordRating: '',
+        utilityRating: '',
+        securityRating: '',
+        waterStatus: '',
+        gasStatus: '',
+        gateClosingTime: '',
+        leaveReason: '',
+        leaveCategory: '',
+        reviewText: ''
+      }));
+      setActiveTab('mine');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       showToast(
         lang === 'bn'
           ? 'রিভিউ জমা হয়েছে। যাচাইয়ের পর সবার জন্য প্রকাশ করা হবে।'
@@ -1143,13 +1456,6 @@ export default function App() {
   };
 
   const totalCityReviews = reviews.filter((r) => r.city === selectedCity).length;
-  const totalCommunityReplies = Object.values(commentsByReview).reduce(
-    (sum, comments) => sum + comments.reduce((subSum, comment) => subSum + 1 + (nestedRepliesByComment[comment.id] || []).length, 0),
-    0
-  );
-  const disputeCount = reviews.filter(
-    (r) => r.city === selectedCity && r.leaveCategory === 'dispute'
-  ).length;
 
   const getAreaName = (cityKey, areaId) => {
     const normalizedId = LEGACY_AREA_TO_THANA[areaId] || areaId;
@@ -1206,7 +1512,7 @@ export default function App() {
     <div className="min-h-screen pb-24 md:pb-0 bg-[#F8FAFC] text-slate-900 font-sans flex flex-col selection:bg-emerald-100 selection:text-emerald-900">
       {/* TOAST */}
       {toast && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2.5 text-xs sm:text-sm font-medium">
+        <div role="status" aria-live="polite" className="fixed bottom-24 md:bottom-5 right-3 left-3 md:left-auto md:right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2.5 text-xs sm:text-sm font-medium">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toast}</span>
         </div>
@@ -1276,6 +1582,19 @@ export default function App() {
             >
               {t.navAbout}
             </button>
+            <button
+              onClick={() => setActiveTab('mine')}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                activeTab === 'mine'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {lang === 'bn' ? 'আমার রিভিউ' : 'My Reviews'}
+              {myReviews.filter((r) => r.status === 'pending').length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold">{myReviews.filter((r) => r.status === 'pending').length}</span>
+              )}
+            </button>
           </nav>
 
           {/* FAR RIGHT: ACTIONS & SEPARATED LANGUAGE SWITCHER */}
@@ -1322,7 +1641,7 @@ export default function App() {
         aria-label="Mobile navigation"
         className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-24px)] max-w-[520px] rounded-[24px] border border-emerald-100 bg-white/95 p-2 shadow-[0_8px_30px_rgba(15,23,42,0.18)] backdrop-blur-xl"
       >
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           <button
             onClick={() => setActiveTab('explore')}
             className={`min-w-0 flex flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] sm:text-xs font-bold leading-tight transition cursor-pointer ${
@@ -1363,6 +1682,20 @@ export default function App() {
             <Shield className="w-5 h-5" />
             <span className="text-center">{t.navAbout}</span>
           </button>
+          <button
+            onClick={() => setActiveTab('mine')}
+            className={`relative min-w-0 flex flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] sm:text-xs font-bold leading-tight transition cursor-pointer ${
+              activeTab === 'mine'
+                ? 'bg-emerald-100 text-emerald-900'
+                : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-800'
+            }`}
+          >
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-center">{lang === 'bn' ? 'আমার রিভিউ' : 'My Reviews'}</span>
+            {myReviews.some((r) => r.status === 'pending') && (
+              <span className="absolute top-1 right-3 w-2.5 h-2.5 rounded-full bg-amber-500 border border-white" />
+            )}
+          </button>
         </div>
       </nav>
 
@@ -1370,16 +1703,19 @@ export default function App() {
       {activeTab === 'explore' && (
         <>
           {/* HERO BANNER WITH DHAKA CITY DRONE VIEW BACKGROUND (OPACITY INCREASED) */}
-          <section className="relative overflow-hidden border-b border-slate-200/80 bg-slate-950 py-14 sm:py-24">
+          <section className="relative border-b border-slate-200/80 bg-slate-950 py-14 sm:py-24">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div 
               className="absolute inset-0 z-0 bg-cover bg-center opacity-55 pointer-events-none mix-blend-luminosity"
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?q=80&w=1600&auto=format&fit=crop')` }}
             />
             <div className="absolute inset-0 z-0 bg-gradient-to-tr from-slate-950 via-slate-900/75 to-emerald-950/30 pointer-events-none" />
-            <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none bk-float" />
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none bk-float-2" />
 
-            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
+            </div>
+
+            <div className="relative z-[25] bk-fade-up max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-900/80 border border-emerald-400/40 text-emerald-300 text-xs font-medium backdrop-blur-md shadow-lg">
                 <Shield className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{t.heroBadge}</span>
@@ -1423,54 +1759,117 @@ export default function App() {
               </div>
 
               {/* SEARCH BAR */}
-              <div className="max-w-2xl mx-auto pt-2">
-                <div className="relative flex items-center bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700 shadow-2xl px-4 py-3">
-                  <Search className="w-5 h-5 text-emerald-400 mr-3 shrink-0" />
+              <div className="max-w-2xl mx-auto pt-2 relative text-left">
+                <div className="relative flex items-center gap-2 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700 focus-within:border-emerald-400/70 focus-within:ring-2 focus-within:ring-emerald-400/20 shadow-2xl pl-4 pr-2 py-2 transition">
+                  <Search className="w-5 h-5 text-emerald-400 shrink-0" />
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => { setSearchQuery(e.target.value); setSearchFocused(true); }}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); scrollToResults(); }
+                      if (e.key === 'Escape') setSearchFocused(false);
+                    }}
                     placeholder={t.searchPlaceholder}
-                    className="w-full bg-transparent text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none"
+                    aria-label={t.searchPlaceholder}
+                    autoComplete="off"
+                    className="w-full min-w-0 bg-transparent text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none py-1.5"
                   />
                   {searchQuery && (
                     <button
+                      type="button"
+                      aria-label={lang === 'bn' ? 'মুছে ফেলুন' : 'Clear search'}
                       onClick={() => setSearchQuery('')}
-                      className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                      className="text-slate-400 hover:text-white p-1.5 cursor-pointer shrink-0"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={scrollToResults}
+                    className="shrink-0 px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-bold transition cursor-pointer"
+                  >
+                    {lang === 'bn' ? 'খুঁজুন' : 'Search'}
+                  </button>
                 </div>
+
+                {searchFocused && searchSuggestions.length > 0 && (
+                  <ul
+                    role="listbox"
+                    onMouseDown={(e) => e.preventDefault()}
+                    className="absolute left-0 right-0 top-full mt-2 z-40 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden bk-fade-down"
+                  >
+                    {searchSuggestions.map((s) => (
+                      <li key={`${s.kind}-${s.id}`}>
+                        <button
+                          type="button"
+                          role="option"
+                          onClick={() => pickSuggestion(s)}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-emerald-50 transition cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2.5 min-w-0">
+                            <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="text-sm font-semibold text-slate-800 truncate">{s.label}</span>
+                            {s.kind === 'area' && (
+                              <span className="text-xs text-slate-500 truncate">{getAreaName(selectedCity, s.thanaId)}</span>
+                            )}
+                          </span>
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 shrink-0">
+                            {s.count} {lang === 'bn' ? 'রিভিউ' : s.count === 1 ? 'review' : 'reviews'}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {searchQuery.trim() && !reviewsLoading && (
+                  <div className="mt-3 text-center bk-fade-in">
+                    {filteredReviews.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={scrollToResults}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-200 text-xs sm:text-sm font-semibold hover:bg-emerald-500/25 transition cursor-pointer"
+                      >
+                        {lang === 'bn'
+                          ? `${filteredReviews.length}টি রিভিউ পাওয়া গেছে — দেখুন ↓`
+                          : `${filteredReviews.length} ${filteredReviews.length === 1 ? 'review' : 'reviews'} found — view ↓`}
+                      </button>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-slate-300">
+                        {lang === 'bn'
+                          ? 'কোনো মিল পাওয়া যায়নি। অন্য বানানে বা এলাকার নামে চেষ্টা করুন।'
+                          : 'No match yet. Try another spelling or an area name.'}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </section>
 
           <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-7">
             {/* METRICS BAR */}
-            <section className="grid grid-cols-3 gap-2.5 sm:gap-4 bg-[#F1F5F9] p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs text-center -mt-12 relative z-20">
-              <div className="px-2">
-                <p className="text-lg sm:text-2xl font-extrabold text-slate-900 tabular-nums">
-                  {totalCityReviews}
+            <section className="grid grid-cols-2 gap-2.5 sm:gap-4 bg-[#F1F5F9] p-3.5 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs text-center -mt-12 relative z-20 bk-fade-up">
+              <div className="px-2 flex flex-col items-center">
+                <p className="text-2xl sm:text-4xl font-extrabold text-slate-900 tabular-nums">
+                  <CountUp value={totalCityReviews} />
                 </p>
-                <p className="text-[11px] sm:text-xs text-slate-600 font-medium mt-0.5">
+                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1 flex items-center gap-1.5">
+                  <Building className="w-3.5 h-3.5 text-emerald-600" />
                   {t.statTotalReviews}
                 </p>
               </div>
-              <div className="px-2 border-x border-slate-200">
-                <p className="text-lg sm:text-2xl font-extrabold text-emerald-600 tabular-nums">
-                  {totalCommunityReplies}
+              <div className="px-2 border-l border-slate-200 flex flex-col items-center">
+                <p className="text-2xl sm:text-4xl font-extrabold text-emerald-600 tabular-nums">
+                  {siteVisits === null ? '—' : <CountUp value={siteVisits} />}
                 </p>
-                <p className="text-[11px] sm:text-xs text-slate-600 font-medium mt-0.5">
-                  {t.statDepositAlert}
-                </p>
-              </div>
-              <div className="px-2">
-                <p className="text-lg sm:text-2xl font-extrabold text-rose-600 tabular-nums">
-                  {disputeCount}
-                </p>
-                <p className="text-[11px] sm:text-xs text-slate-600 font-medium mt-0.5">
-                  {t.statDisputeLeaves}
+                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1 flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                  {t.statVisits}
                 </p>
               </div>
             </section>
@@ -1571,11 +1970,58 @@ export default function App() {
             )}
 
             {/* REVIEW LIST */}
-            {filteredReviews.length === 0 ? (
+            <section id="results" className="scroll-mt-24 space-y-4">
+            {!reviewsLoading && !reviewsError && (
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                <p className="text-sm font-bold text-slate-700">
+                  {lang === 'bn'
+                    ? `${filteredReviews.length}টি রিভিউ`
+                    : `${filteredReviews.length} ${filteredReviews.length === 1 ? 'review' : 'reviews'}`}
+                  {searchQuery.trim() && (
+                    <span className="font-medium text-slate-500">
+                      {lang === 'bn' ? ` — “${searchQuery.trim()}” এর জন্য` : ` for “${searchQuery.trim()}”`}
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+            {reviewsLoading ? (
+              <div className="space-y-4" role="status" aria-label={lang === 'bn' ? 'রিভিউ লোড হচ্ছে' : 'Loading reviews'}>
+                <ReviewSkeleton />
+                <ReviewSkeleton />
+                <ReviewSkeleton />
+              </div>
+            ) : reviewsError && reviews.length === 0 ? (
+              <div className="bg-rose-50 rounded-2xl border border-rose-200 p-8 text-center max-w-md mx-auto">
+                <h3 className="text-base font-bold text-rose-900">
+                  {lang === 'bn' ? 'রিভিউ লোড করা যায়নি' : "Couldn't load reviews"}
+                </h3>
+                <p className="text-sm text-rose-800/80 mt-1 mb-4">
+                  {lang === 'bn' ? 'ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।' : 'Check your connection and try again.'}
+                </p>
+                <button
+                  onClick={() => { setReviewsLoading(true); setReviewsError(false); setReloadKey((k) => k + 1); }}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-emerald-700 transition cursor-pointer"
+                >
+                  {lang === 'bn' ? 'আবার চেষ্টা করুন' : 'Try again'}
+                </button>
+              </div>
+            ) : filteredReviews.length === 0 ? (
               <div className="bg-[#F1F5F9] rounded-2xl border border-slate-200/90 p-10 text-center max-w-md mx-auto">
                 <MapPin className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                 <h3 className="text-base font-bold text-slate-800">{t.emptyTitle}</h3>
                 <p className="text-xs text-slate-600 mt-1 mb-4">{t.emptySub}</p>
+                {searchQuery.trim() && otherCityMatchCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedCity(selectedCity === 'dhaka' ? 'chittagong' : 'dhaka'); setSelectedAreaId('all'); setSelectedSubBlock('all'); }}
+                    className="mb-3 block mx-auto text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
+                  >
+                    {lang === 'bn'
+                      ? `${selectedCity === 'dhaka' ? 'চট্টগ্রামে' : 'ঢাকায়'} ${otherCityMatchCount}টি রিভিউ পাওয়া গেছে — দেখুন`
+                      : `${otherCityMatchCount} found in ${selectedCity === 'dhaka' ? 'Chittagong' : 'Dhaka'} — view`}
+                  </button>
+                )}
                 <button
                   onClick={() => setIsWriteModalOpen(true)}
                   className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-emerald-700 transition cursor-pointer"
@@ -1585,7 +2031,7 @@ export default function App() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredReviews.map((review) => {
+                {filteredReviews.map((review, cardIndex) => {
                   const isThreadOpen = openThreadIds.includes(review.id);
                   const isPositive = review.overallRating >= 7.0;
                   const isWarning = review.overallRating < 4.0;
@@ -1599,7 +2045,12 @@ export default function App() {
                   return (
                     <article
                       key={review.id}
-                      className="bg-[#F1F5F9] rounded-2xl border border-slate-200/90 hover:border-slate-300 transition-all duration-150 shadow-2xs overflow-hidden"
+                      onClick={(e) => {
+                        if (e.target.closest('button, a, input, textarea, select, label')) return;
+                        setSelectedReviewForDetails(review);
+                      }}
+                      style={{ animationDelay: `${Math.min(cardIndex, 8) * 70}ms` }}
+                      className="bk-card bk-fade-up cursor-pointer bg-[#F1F5F9] rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden"
                     >
                       <div className="p-5 sm:p-6 space-y-4">
                         <div className="flex items-start justify-between gap-3">
@@ -1703,10 +2154,10 @@ export default function App() {
                             className={`px-2.5 py-1.5 rounded-lg font-semibold border flex items-center gap-1 transition cursor-pointer ${
                               likedReviewIds.includes(review.id)
                                 ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                                : 'bg-white border-slate-300 text-slate-700'
+                                : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-300'
                             }`}
                           >
-                            <ThumbsUp className="w-3 h-3" />
+                            <ThumbsUp className={`w-3 h-3 ${likedReviewIds.includes(review.id) ? 'bk-like-pop fill-current' : ''}`} />
                             <span>{likeCounts[review.id] ?? review.upvotes ?? 0}</span>
                           </button>
 
@@ -1728,7 +2179,7 @@ export default function App() {
 
                       {/* COMMENTS & NESTED REPLIES */}
                       {isThreadOpen && (
-                        <div className="bg-[#E2E8F0]/40 border-t border-slate-200 px-5 py-4 space-y-4">
+                        <div className="bk-fade-down bg-[#E2E8F0]/40 border-t border-slate-200 px-5 py-4 space-y-4">
                           {topReplies.length === 0 ? (
                             <p className="text-xs text-slate-500 italic">কোনো কমেন্ট নেই।</p>
                           ) : (
@@ -1840,6 +2291,7 @@ export default function App() {
                 })}
               </div>
             )}
+            </section>
           </main>
         </>
       )}
@@ -1887,10 +2339,118 @@ export default function App() {
         </main>
       )}
 
+      {/* MY REVIEWS TAB */}
+      {activeTab === 'mine' && (
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-5">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+              {lang === 'bn' ? 'আমার রিভিউ' : 'My Reviews'}
+            </h2>
+            <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+              {lang === 'bn'
+                ? 'আপনার জমা দেওয়া রিভিউগুলো এখানে দেখুন। যাচাই শেষ হলে রিভিউ সবার জন্য প্রকাশিত হবে।'
+                : 'Track the reviews you submitted here. Each one is published after a quick moderation check.'}
+            </p>
+          </div>
+
+          {myReviewsLoading ? (
+            <div className="space-y-4" role="status" aria-label={lang === 'bn' ? 'লোড হচ্ছে' : 'Loading'}>
+              <ReviewSkeleton />
+              <ReviewSkeleton />
+            </div>
+          ) : myReviewsError ? (
+            <div className="bg-rose-50 rounded-2xl border border-rose-200 p-6 text-sm text-rose-900">
+              {lang === 'bn'
+                ? 'আপনার রিভিউ লোড করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।'
+                : "Couldn't load your reviews. Please try again in a moment."}
+            </div>
+          ) : myReviews.length === 0 ? (
+            <div className="bg-[#F1F5F9] rounded-2xl border border-slate-200/90 p-10 text-center">
+              <ClipboardList className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+              <h3 className="text-base font-bold text-slate-800">
+                {lang === 'bn' ? 'এখনো কোনো রিভিউ জমা দেননি' : "You haven't submitted a review yet"}
+              </h3>
+              <p className="text-sm text-slate-600 mt-1 mb-4">
+                {lang === 'bn'
+                  ? 'আগের বাসার অভিজ্ঞতা শেয়ার করলে পরের ভাড়াটিয়ারা উপকৃত হবেন।'
+                  : 'Share your last flat experience to help the next tenant.'}
+              </p>
+              <button
+                onClick={() => setIsWriteModalOpen(true)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-emerald-700 transition cursor-pointer"
+              >
+                + {t.shareBtn}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {myReviews.map((review) => {
+                const meta = REVIEW_STATUS_META[review.status] || REVIEW_STATUS_META.pending;
+                const when = new Date(review.createdAt);
+                return (
+                  <article key={review.id} className="bg-[#F1F5F9] rounded-2xl border border-slate-200/90 p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs text-slate-600">
+                          {review.city === 'dhaka' ? 'ঢাকা' : 'চট্টগ্রাম'} :{' '}
+                          {getAreaName(review.city, review.thanaId || LEGACY_AREA_TO_THANA[review.areaId] || review.areaId)}
+                          {review.subBlock ? ` / ${review.subBlock}` : ''}
+                        </p>
+                        <h3 className="text-base font-bold text-slate-900 truncate">{review.houseName}</h3>
+                      </div>
+                      <span className={`shrink-0 px-2.5 py-1 rounded-full border text-xs font-bold ${meta.cls}`}>
+                        {meta[lang]}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed line-clamp-3 whitespace-pre-line">
+                      {review.reviewText}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                      <span>
+                        {Number.isNaN(when.getTime())
+                          ? ''
+                          : when.toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {' · '}★ {Number(review.overallRating).toFixed(1)}/10
+                      </span>
+                      {review.status === 'approved' && (
+                        <button
+                          onClick={() => {
+                            setSelectedCity(review.city);
+                            setSelectedAreaId(review.thanaId || review.areaId);
+                            setSelectedSubBlock('all');
+                            setActiveTab('explore');
+                          }}
+                          className="font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+                        >
+                          {lang === 'bn' ? 'সবার জন্য যেভাবে দেখা যাচ্ছে →' : 'See it in the feed →'}
+                        </button>
+                      )}
+                    </div>
+                    {review.status === 'pending' && (
+                      <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        {lang === 'bn'
+                          ? 'শুধু আপনি এটি দেখতে পাচ্ছেন। যাচাই শেষ হলে এটি সবার জন্য প্রকাশিত হবে।'
+                          : 'Only you can see this for now. It will go public once moderation is done.'}
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          <p className="text-[12px] text-slate-500 leading-relaxed">
+            {lang === 'bn'
+              ? `আপনি বেনামে ব্যবহার করছেন (${myAlias})। এই তালিকা আপনার বর্তমান ব্রাউজারে সংরক্ষিত থাকে; ব্রাউজারের ডেটা মুছলে বা অন্য ফোনে গেলে এটি দেখা নাও যেতে পারে।`
+              : `You're using the site anonymously (${myAlias}). This list lives in your current browser; clearing browser data or switching device may hide it.`}
+          </p>
+        </main>
+      )}
+
       {/* NEW REVIEW MODAL */}
       {selectedReviewForDetails && (
         <div
-          className="fixed inset-0 z-[120] bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+          className="bk-fade-in fixed inset-0 z-[120] bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
           onClick={(event) => {
             if (event.target === event.currentTarget) setSelectedReviewForDetails(null);
           }}
@@ -1899,7 +2459,7 @@ export default function App() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="review-details-title"
-            className="w-full max-w-3xl max-h-[92vh] bg-[#F8FAFC] rounded-2xl sm:rounded-3xl shadow-2xl border border-white/70 overflow-hidden flex flex-col"
+            className="bk-pop-in w-full max-w-3xl max-h-[92vh] bg-[#F8FAFC] rounded-2xl sm:rounded-3xl shadow-2xl border border-white/70 overflow-hidden flex flex-col"
           >
             <header className="px-5 py-4 sm:px-7 sm:py-5 bg-white border-b border-slate-200 flex items-start justify-between gap-4 shrink-0">
               <div className="min-w-0">
@@ -1991,8 +2551,8 @@ export default function App() {
       )}
 
       {isWriteModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] max-h-[calc(100dvh-1rem)] flex flex-col shadow-2xl border border-slate-200 overflow-hidden my-auto">
+        <div className="bk-fade-in fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+          <div className="bk-pop-in bg-white rounded-2xl max-w-xl w-full max-h-[92vh] max-h-[calc(100dvh-1rem)] flex flex-col shadow-2xl border border-slate-200 overflow-hidden my-auto">
             <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-[#F1F5F9]">
               <div>
                 <h3 className="font-bold text-base text-slate-900">{t.modalTitle}</h3>

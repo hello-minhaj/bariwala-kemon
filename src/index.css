@@ -3,8 +3,10 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Inter has no Bangla glyphs; Hind Siliguri fills in so Bangla renders the same on every device. */
+  font-family: Inter, "Hind Siliguri", "Noto Sans Bengali", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+html[lang="bn"] body { line-height: 1.65; }
 html { scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; }
 button, input, select, textarea { font: inherit; }
@@ -33,3 +35,33 @@ button, input, select, textarea { font: inherit; }
   .worst-ticker-area, .worst-ticker-rating { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .worst-ticker-track { animation: none; transform: none; } }
+
+/* ---- Motion & interaction ---- */
+@keyframes bkFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes bkFadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes bkFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bkPopIn { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes bkLikePop { 0% { transform: scale(1); } 40% { transform: scale(1.45) rotate(-8deg); } 100% { transform: scale(1); } }
+@keyframes bkFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+
+/* "backwards" (not "both") so hover transforms still work after the entrance finishes */
+.bk-fade-up { animation: bkFadeUp .55s cubic-bezier(.2, .7, .2, 1) backwards; }
+.bk-fade-down { animation: bkFadeDown .3s ease-out backwards; }
+.bk-fade-in { animation: bkFadeIn .25s ease-out backwards; }
+.bk-pop-in { animation: bkPopIn .32s cubic-bezier(.2, .8, .2, 1) backwards; }
+.bk-like-pop { animation: bkLikePop .45s ease-out; }
+.bk-float { animation: bkFloat 9s ease-in-out infinite; }
+.bk-float-2 { animation: bkFloat 12s ease-in-out infinite reverse; }
+
+.bk-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.bk-card:hover { transform: translateY(-3px); box-shadow: 0 16px 32px -14px rgb(15 23 42 / 22%); border-color: #6ee7b7; }
+.bk-card:active { transform: translateY(-1px) scale(.995); }
+
+/* Tactile press feedback on every button */
+button:not(:disabled):active { scale: .96; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-fade-up, .bk-fade-down, .bk-fade-in, .bk-pop-in, .bk-like-pop, .bk-float, .bk-float-2 { animation: none; }
+  .bk-card, .bk-card:hover, .bk-card:active { transition: none; transform: none; }
+  button:not(:disabled):active { scale: 1; }
+}
