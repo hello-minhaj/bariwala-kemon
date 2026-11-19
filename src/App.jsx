@@ -325,11 +325,11 @@ const UI_TEXT = {
     navAreas: 'এলাকা ও ব্লক',
     navAbout: 'কেন এই প্ল্যাটফর্ম?',
     shareBtn: 'অভিজ্ঞতা শেয়ার করুন',
-    heroBadge: '১০০% নিরাপদ ও বিশ্বস্ত',
-    heroTitle1: 'নতুন বাসা ভাড়া নিচ্ছেন?',
-    heroTitle2: 'আগে জানুন বাড়িওয়ালা কেমন।',
+    heroBadge: 'ভাড়াটিয়ার বাস্তব অভিজ্ঞতা',
+    heroTitle1: 'ভাড়া নেওয়ার আগে,',
+    heroTitle2: 'বাড়িওয়ালা কেমন জেনে নিন।',
     heroSub:
-      'বাসা বাইরে থেকে চকচকে হলেও আগের ভাড়াটিয়া কেন বাসা ছেড়েছিলেন, এবং পানি-গ্যাসের আসল অবস্থা কী—জেনে নিন সরাসরি আগের ভাড়াটিয়াদের কাছ থেকে।',
+      'শুধু বাসা নয়—বাড়িওয়ালার ব্যবহার, ভাড়া ও অতিরিক্ত চার্জের স্বচ্ছতা, গ্যাস-পানি, মেরামত এবং ব্যক্তিগত গোপনীয়তা নিয়ে আগের ও বর্তমান ভাড়াটিয়াদের অভিজ্ঞতা জানুন।',
     searchPlaceholder: 'এলাকার নাম, থানা বা বাসার নাম লিখে খুঁজুন...',
     cityDhaka: 'ঢাকা',
     cityChittagong: 'চট্টগ্রাম',
@@ -354,7 +354,7 @@ const UI_TEXT = {
     emptySub: 'আপনি যদি এই এলাকায় থেকে থাকেন, তবে প্রথম রিভিউ দিয়ে অন্যদের সাহায্য করুন।',
     modalTitle: 'আপনার বাসার অভিজ্ঞতা শেয়ার করুন',
     modalSub: 'আপনার গোপনীয়তা সম্পূর্ণ সুরক্ষিত রাখা হয়।',
-    submitBtn: 'রিভিউ প্রকাশ করুন',
+    submitBtn: 'যাচাইয়ের জন্য জমা দিন',
     cancelBtn: 'বাতিল করুন'
   },
   en: {
@@ -363,11 +363,11 @@ const UI_TEXT = {
     navAreas: 'Areas & Blocks',
     navAbout: 'Why This Platform?',
     shareBtn: 'Share Experience',
-    heroBadge: '100% Secure & Verified',
-    heroTitle1: 'Renting a new flat?',
-    heroTitle2: 'Find out how the landlord really is.',
+    heroBadge: 'Real tenant experiences',
+    heroTitle1: 'Before you rent,',
+    heroTitle2: 'learn how the landlord treats tenants.',
     heroSub:
-      'Before moving into a new flat, check why the previous tenant left, how the water & gas situation is, and discuss openly with past tenants in the comments.',
+      'Go beyond the listing. Learn about landlord communication, rent transparency, utilities, maintenance, privacy and day-to-day tenant experience from people who have lived there.',
     searchPlaceholder: 'Search by area, thana, or house name...',
     cityDhaka: 'Dhaka',
     cityChittagong: 'Chittagong',
@@ -391,8 +391,8 @@ const UI_TEXT = {
     emptyTitle: 'No reviews found in this block yet',
     emptySub: 'Lived here before? Be the first to share a review.',
     modalTitle: 'Share Your Rental Experience',
-    modalSub: 'Your privacy is fully protected.',
-    submitBtn: 'Publish Review',
+    modalSub: 'You may post under an alias. Do not include phone numbers, NID details or an exact unit address.',
+    submitBtn: 'Submit for moderation',
     cancelBtn: 'Cancel'
   }
 };
@@ -2329,13 +2329,34 @@ export default function App() {
 
       {/* ABOUT TAB */}
       {activeTab === 'about' && (
-        <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full space-y-6">
-          <div className="bg-[#F1F5F9] rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-2xs">
-            <h2 className="text-2xl font-extrabold text-slate-900">Bariwala Kemon</h2>
-            <p className="text-sm text-slate-700 leading-relaxed">
-              ঢাকা ও চট্টগ্রাম শহরের ভাড়াটিয়াদের দুর্দশা ও সঠিক তথ্য পাওয়ার সংকট দূর করতে এই প্ল্যাটফর্মটি তৈরি করা হয়েছে। এখানে সম্পূর্ণ নিরাপদে বাড়িওয়ালা এবং বাসা সম্পর্কে অভিজ্ঞতা শেয়ার করা যায়।
-            </p>
-          </div>
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full space-y-5">
+          <section className="bg-slate-950 text-white rounded-2xl p-6 sm:p-8 space-y-3">
+            <p className="text-xs font-bold tracking-wide text-emerald-300">{lang === 'bn' ? 'আমাদের মূল উদ্দেশ্য' : 'OUR CORE PURPOSE'}</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold">{lang === 'bn' ? 'ভাড়া নেওয়ার আগে, বাড়িওয়ালা কেমন জেনে নিন।' : 'Know the rental experience before you sign.'}</h2>
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">{lang === 'bn' ? 'Bariwala Kemon ভাড়াটিয়াদের বাস্তব অভিজ্ঞতা তুলে ধরতে তৈরি—যাতে মানুষ শুধু বাসার ছবি বা বিজ্ঞাপন নয়, ভাড়া নেওয়ার পরের দৈনন্দিন অভিজ্ঞতাও বুঝতে পারেন।' : 'Bariwala Kemon puts tenant experiences first, so people can look beyond photos and advertisements and understand what day-to-day renting may actually be like.'}</p>
+          </section>
+          <section className="grid sm:grid-cols-2 gap-3">
+            {[
+              [lang === 'bn' ? 'ভাড়া ও আর্থিক স্বচ্ছতা' : 'Rent & financial transparency', lang === 'bn' ? 'ভাড়া বৃদ্ধি, সার্ভিস চার্জ, ইউটিলিটি বিল, অগ্রিম ও জামানত ফেরতের অভিজ্ঞতা।' : 'Experiences with rent increases, service charges, utility bills, deposits and refunds.'],
+              [lang === 'bn' ? 'গ্যাস, পানি ও অন্যান্য সেবা' : 'Utilities & essential services', lang === 'bn' ? 'বিজ্ঞাপনে বা চুক্তিতে যা বলা হয়েছিল, বাস্তবে গ্যাস, পানি, বিদ্যুৎ ও অন্যান্য সেবা কেমন ছিল।' : 'How gas, water, electricity and other services compare with what was promised.'],
+              [lang === 'bn' ? 'মেরামত ও রক্ষণাবেক্ষণ' : 'Maintenance & repairs', lang === 'bn' ? 'সমস্যা জানালে কত দ্রুত সাড়া দেওয়া হয়েছে এবং সমাধান হয়েছে কি না।' : 'How promptly maintenance issues were acknowledged and resolved.'],
+              [lang === 'bn' ? 'সম্মান, যোগাযোগ ও গোপনীয়তা' : 'Respect, communication & privacy', lang === 'bn' ? 'যোগাযোগের ধরন, বাসায় প্রবেশের আগে নোটিশ, ব্যক্তিগত সীমারেখা এবং নিয়মের ধারাবাহিকতা।' : 'Communication, notice before entry, personal boundaries and consistency of house rules.']
+            ].map(([title, description]) => (
+              <article key={title} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-2">
+                <h3 className="font-extrabold text-slate-900">{title}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+              </article>
+            ))}
+          </section>
+          <section className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-2">
+            <h3 className="font-extrabold text-emerald-950">{lang === 'bn' ? 'রিভিউ কীভাবে পড়বেন' : 'How to read reviews'}</h3>
+            <p className="text-sm text-emerald-950/80 leading-relaxed">{lang === 'bn' ? 'প্রকাশিত রিভিউ মানে সেটি মডারেশন প্রক্রিয়া পার হয়েছে; এর প্রতিটি বক্তব্য স্বাধীনভাবে প্রমাণিত—এমন নয়। রিভিউয়ের সময়কাল, তারিখ, নমুনার সংখ্যা ও অভিজ্ঞতার ধরন বিবেচনা করুন। পর্যাপ্ত তথ্য না থাকলে কোনো এলাকা বা বাড়ি সম্পর্কে সিদ্ধান্তে পৌঁছাবেন না।' : 'A published review has passed the platform moderation process; that does not mean every statement has been independently proven. Consider the rental period, date, sample size and type of experience. Do not treat sparse data as a reliable area-wide conclusion.'}</p>
+          </section>
+          <section className="bg-white border border-slate-200 rounded-2xl p-5 space-y-2">
+            <h3 className="font-extrabold text-slate-900">{lang === 'bn' ? 'সবার জন্য ন্যায্যতা ও নিরাপত্তা' : 'Fairness and safety for everyone'}</h3>
+            <p className="text-sm text-slate-600 leading-relaxed">{lang === 'bn' ? 'এটি কাউকে হেয় করার জায়গা নয়। নিজের প্রত্যক্ষ অভিজ্ঞতা লিখুন; হুমকি, হয়রানি, বৈষম্য, ব্যক্তিগত তথ্য বা প্রমাণহীন গুরুতর অভিযোগ প্রকাশ করবেন না। বাড়িওয়ালা ও সম্পত্তি ব্যবস্থাপকদেরও যথাযথ জবাব ও সংশোধনের সুযোগ থাকা উচিত।' : 'This is not a place to shame people. Share first-hand experience and avoid threats, harassment, discrimination, personal information or unsupported serious allegations. Landlords and property managers should also have a fair opportunity to respond and request corrections.'}</p>
+          </section>
+          <p className="text-xs text-slate-500 leading-relaxed">{lang === 'bn' ? 'বর্তমানে রিভিউ ব্রাউজিংয়ের প্রাথমিক কভারেজ ঢাকা ও চট্টগ্রাম। জাতীয় পর্যায়ের বিস্তৃতি ধাপে ধাপে হবে; সব এলাকায় এখনো পর্যাপ্ত তথ্য নেই।' : 'Current review browsing is focused on Dhaka and Chattogram. Nationwide coverage is a phased goal; reliable data is not yet available for every locality.'}</p>
         </main>
       )}
 
