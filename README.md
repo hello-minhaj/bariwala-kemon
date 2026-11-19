@@ -1,4 +1,8 @@
-# Bariwala Kemon — real Firestore-backed review project
+# Bariwala Kemon — tenant experience & rental transparency
+
+Read [`docs/PRODUCT_FOUNDATION.md`](docs/PRODUCT_FOUNDATION.md) for the product promise, trust principles, implementation boundaries and phased roadmap.
+
+Bariwala Kemon’s core purpose is to help renters understand day-to-day landlord/property-manager treatment through structured first-hand tenant experiences. Property discovery and rent comparison are supporting capabilities.
 
 This project preserves the supplied React UI, removes the two hardcoded sample reviews, and connects review submissions to Firebase Firestore.
 
@@ -6,6 +10,7 @@ This project preserves the supplied React UI, removes the two hardcoded sample r
 
 - The public feed subscribes to Firestore in real time and displays only documents whose `status` is `approved`.
 - Submitted reviews are saved to Firestore with `status: "pending"`.
+- A structured review can be submitted without a long written narrative; `reviewText` is optional.
 - This moderation step is intentional: rental reviews can contain allegations about real people. Do not publish unverified claims automatically.
 - A moderator must review a submission and set its `status` field to `approved` in the Firebase Console before it appears publicly. After approval, all open website sessions receive the review through the live listener.
 - The old sample properties and reviews have been removed; no fake reviews are seeded.
@@ -38,7 +43,8 @@ After a visitor submits a review, open Firebase Console > Firestore Database > `
 
 ## Limitations / before a public launch
 
-- This package adds shared persistence for reviews and real-time display of approved reviews. Existing comments, nested replies, and upvote handlers in the UI still use local React state and are not yet shared/persisted.
+- The current review browser is focused on Dhaka and Chattogram; nationwide coverage in the product vision is a phased goal, not current functionality.
+- Existing comments, nested replies, and upvote handlers must be validated against the current Firestore rules and end-to-end persistence before being described as complete.
 - Firestore rules here intentionally disallow client-side updates/deletes. Build a trusted admin moderation interface or use Firebase Console for moderation.
 - Anonymous auth is not strong abuse prevention. Before public launch add server-side rate limiting/App Check, reporting/blocking, audit logs, and legal/privacy review.
 - Review text is checked for a simple Bangladesh phone-number pattern in the client, but that is not a substitute for robust server-side privacy filtering/moderation.
