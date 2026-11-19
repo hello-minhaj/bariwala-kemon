@@ -93,7 +93,6 @@ service cloud.firestore {
         && request.resource.data.tags is list
         && request.resource.data.tags.size() <= 5
         && request.resource.data.reviewText is string
-        && request.resource.data.reviewText.size() >= 1
         && request.resource.data.reviewText.size() <= 3000
         && request.resource.data.reviewerAlias is string
         && request.resource.data.reviewerAlias.size() <= 40
