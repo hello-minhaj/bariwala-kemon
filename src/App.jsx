@@ -947,6 +947,10 @@ export default function App() {
   const [activeReplyBoxId, setActiveReplyBoxId] = useState(null);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [selectedReviewForDetails, setSelectedReviewForDetails] = useState(null);
+  const [reportingReview, setReportingReview] = useState(null);
+  const [reportReason, setReportReason] = useState('personal_info');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
 
   const [newReview, setNewReview] = useState({
@@ -1289,6 +1293,34 @@ export default function App() {
     setOpenThreadIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+  };
+
+  const submitReviewReport = async (event) => {
+    event.preventDefault();
+    if (!db || !user || !reportingReview) {
+      showToast(lang === 'bn' ? 'রিপোর্ট জমা দিতে সংযোগ প্রয়োজন।' : 'Please connect before submitting a report.');
+      return;
+    }
+    const details = reportDetails.trim();
+    if (details.length > 1000) {
+      showToast(lang === 'bn' ? 'বিস্তারিত ১০০০ অক্ষরের মধ্যে রাখুন।' : 'Details must be 1000 characters or fewer.');
+      return;
+    }
+    setReportSubmitting(true);
+    try {
+      await setDoc(doc(db, 'reviews', reportingReview.id, 'reports', user.uid), {
+        reason: reportReason, details, reporterUid: user.uid, status: 'pending', createdAt: serverTimestamp()
+      });
+      setReportingReview(null);
+      setReportReason('personal_info');
+      setReportDetails('');
+      showToast(lang === 'bn' ? 'রিপোর্ট জমা হয়েছে। মডারেশন টিম পর্যালোচনা করবে।' : 'Report submitted for moderator review.');
+    } catch (error) {
+      console.error('Review report failed:', error);
+      showToast(lang === 'bn' ? 'রিপোর্ট জমা হয়নি। আগে রিপোর্ট করে থাকলে পুনরায় জমা দেওয়া যাবে না।' : 'Could not submit. You may already have reported this review.');
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   const handleUpvote = async (reviewId) => {
@@ -2161,6 +2193,9 @@ export default function App() {
                             <span>{likeCounts[review.id] ?? review.upvotes ?? 0}</span>
                           </button>
 
+                          <button type="button" onClick={() => { setReportingReview(review); setReportReason('personal_info'); setReportDetails(''); }} className="px-2.5 py-1.5 rounded-lg font-semibold border bg-white border-slate-300 text-slate-600 hover:border-rose-300 hover:text-rose-700 transition cursor-pointer">
+                            {lang === 'bn' ? 'রিপোর্ট' : 'Report'}
+                          </button>
                           <button
                             onClick={() => toggleThreadOpen(review.id)}
                             className={`px-3 py-1.5 rounded-lg font-semibold border flex items-center gap-1.5 transition cursor-pointer ${
@@ -2794,6 +2829,39 @@ export default function App() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {reportingReview && (
+        <div className="bk-fade-in fixed inset-0 z-[130] bg-slate-950/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6" onClick={(event) => {
+          if (event.target === event.currentTarget && !reportSubmitting) setReportingReview(null);
+        }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="report-review-title" className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 sm:p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div><h2 id="report-review-title" className="text-lg font-extrabold text-slate-900">{lang === 'bn' ? 'রিভিউ রিপোর্ট করুন' : 'Report this review'}</h2>
+                <p className="text-xs text-slate-500 mt-1">{reportingReview.houseName} · {lang === 'bn' ? 'রিপোর্টটি শুধু মডারেশন টিম দেখবে।' : 'Only moderators can see your report.'}</p></div>
+              <button type="button" disabled={reportSubmitting} onClick={() => setReportingReview(null)} className="text-slate-500 hover:text-slate-900 text-2xl leading-none" aria-label="Close">×</button>
+            </div>
+            <form onSubmit={submitReviewReport} className="space-y-3">
+              <label className="block text-sm font-semibold text-slate-700">{lang === 'bn' ? 'রিপোর্টের কারণ' : 'Reason'}
+                <select required value={reportReason} onChange={(event) => setReportReason(event.target.value)} className="mt-1 w-full border border-slate-300 rounded-lg bg-slate-50 px-3 py-2">
+                  <option value="personal_info">{lang === 'bn' ? 'ব্যক্তিগত তথ্য প্রকাশ' : 'Personal information exposed'}</option>
+                  <option value="harassment">{lang === 'bn' ? 'হয়রানি বা হুমকি' : 'Harassment or threats'}</option>
+                  <option value="false_info">{lang === 'bn' ? 'ভুল বা বিভ্রান্তিকর তথ্য' : 'False or misleading information'}</option>
+                  <option value="not_firsthand">{lang === 'bn' ? 'প্রত্যক্ষ অভিজ্ঞতা নয়' : 'Not a first-hand experience'}</option>
+                  <option value="other">{lang === 'bn' ? 'অন্যান্য' : 'Other'}</option>
+                </select>
+              </label>
+              <label className="block text-sm font-semibold text-slate-700">{lang === 'bn' ? 'অতিরিক্ত তথ্য (ঐচ্ছিক)' : 'Additional context (optional)'}
+                <textarea rows={3} maxLength={1000} value={reportDetails} onChange={(event) => setReportDetails(event.target.value)} placeholder={lang === 'bn' ? 'কোন অংশটি কেন রিপোর্ট করছেন, সংক্ষেপে লিখুন।' : 'Briefly explain what should be reviewed.'} className="mt-1 w-full border border-slate-300 rounded-lg bg-slate-50 px-3 py-2 text-sm" />
+              </label>
+              <p className="text-xs text-slate-500">{lang === 'bn' ? 'রিপোর্টটি প্রকাশ্যে দেখানো হবে না। মিথ্যা বা হয়রানিমূলক রিপোর্ট করবেন না।' : 'Your report is private to moderators. Do not submit abusive or knowingly false reports.'}</p>
+              <div className="flex justify-end gap-2">
+                <button type="button" disabled={reportSubmitting} onClick={() => setReportingReview(null)} className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100">{lang === 'bn' ? 'বাতিল' : 'Cancel'}</button>
+                <button type="submit" disabled={reportSubmitting} className="px-4 py-2 rounded-lg text-sm font-bold bg-slate-900 text-white hover:bg-rose-700 disabled:opacity-50">{reportSubmitting ? (lang === 'bn' ? 'জমা হচ্ছে…' : 'Submitting…') : (lang === 'bn' ? 'রিপোর্ট জমা দিন' : 'Submit report')}</button>
+              </div>
+            </form>
+          </section>
         </div>
       )}
 
