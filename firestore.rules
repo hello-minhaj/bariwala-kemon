@@ -189,6 +189,26 @@ service cloud.firestore {
         }
       }
 
+      // One private report per authenticated visitor per published review.
+      match /reports/{reporterUid} {
+        allow read: if isAdmin();
+        allow create: if signedIn()
+          && request.auth.uid == reporterUid
+          && get(/databases/$(database)/documents/reviews/$(reviewId)).data.status == 'approved'
+          && request.resource.data.keys().hasOnly(['reason', 'details', 'reporterUid', 'status', 'createdAt'])
+          && request.resource.data.reason in ['personal_info', 'harassment', 'false_info', 'not_firsthand', 'other']
+          && request.resource.data.details is string
+          && request.resource.data.details.size() <= 1000
+          && request.resource.data.reporterUid == request.auth.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt is timestamp;
+        allow update: if isAdmin()
+          && resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in ['reviewed', 'dismissed'];
+        allow delete: if false;
+      }
+
       match /likes/{userId} {
         allow read: if signedIn();
 
