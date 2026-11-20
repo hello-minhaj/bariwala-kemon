@@ -1,6 +1,6 @@
 # Bariwala Kemon — tenant experience & rental transparency
 
-Read [`docs/PRODUCT_FOUNDATION.md`](docs/PRODUCT_FOUNDATION.md) for the product promise, trust principles, implementation boundaries and phased roadmap.
+Read [`docs/PRODUCT_FOUNDATION.md`](docs/PRODUCT_FOUNDATION.md) for the product promise, trust principles, implementation boundaries and phased roadmap. Read [`docs/PHASE_1_AUDIT.md`](docs/PHASE_1_AUDIT.md) for the current source/rules audit and next trust work.
 
 Bariwala Kemon’s core purpose is to help renters understand day-to-day landlord/property-manager treatment through structured first-hand tenant experiences. Property discovery and rent comparison are supporting capabilities.
 
@@ -10,9 +10,11 @@ This project preserves the supplied React UI, removes the two hardcoded sample r
 
 - The public feed subscribes to Firestore in real time and displays only documents whose `status` is `approved`.
 - Submitted reviews are saved to Firestore with `status: "pending"`.
-- A structured review can be submitted without a long written narrative; `reviewText` is optional.
+- A structured review can be submitted without a long written narrative; `reviewText` is optional in the form, but the field is still written as an empty string when omitted.
 - This moderation step is intentional: rental reviews can contain allegations about real people. Do not publish unverified claims automatically.
-- A moderator must review a submission and set its `status` field to `approved` in the Firebase Console before it appears publicly. After approval, all open website sessions receive the review through the live listener.
+- A moderator must review a submission and set its `status` field to `approved` in the Firebase Console or the role-protected admin dashboard before it appears publicly.
+- Comments and nested replies are also saved in Firestore as pending and appear only after moderation.
+- Likes are stored per anonymous Firebase UID in Firestore. This reduces repeat likes per UID but is not full abuse prevention.
 - The old sample properties and reviews have been removed; no fake reviews are seeded.
 
 ## 1. Create/configure Firebase
@@ -44,8 +46,9 @@ After a visitor submits a review, open Firebase Console > Firestore Database > `
 ## Limitations / before a public launch
 
 - The current review browser is focused on Dhaka and Chattogram; nationwide coverage in the product vision is a phased goal, not current functionality.
-- Existing comments, nested replies, and upvote handlers must be validated against the current Firestore rules and end-to-end persistence before being described as complete.
-- Firestore rules here intentionally disallow client-side updates/deletes. Build a trusted admin moderation interface or use Firebase Console for moderation.
-- Anonymous auth is not strong abuse prevention. Before public launch add server-side rate limiting/App Check, reporting/blocking, audit logs, and legal/privacy review.
-- Review text is checked for a simple Bangladesh phone-number pattern in the client, but that is not a substitute for robust server-side privacy filtering/moderation.
-- This project has not been deployed or connected to your Firebase account from this environment; you must complete Firebase setup using your own project credentials.
+- Reporting and correction entry points are not yet implemented.
+- The current client-side privacy helper masks a Bangladesh mobile-number pattern only; it is not comprehensive PII detection or a security boundary.
+- Anonymous auth is not strong abuse prevention. Before public launch add server-enforced rate limiting/App Check, reporting/blocking, audit logs, and legal/privacy review.
+- Confirm Firestore backups/exports, error monitoring and deployed rules in the actual Firebase project; these cannot be verified from repository source alone.
+- Run `npm run build` and emulator-backed Firestore rules tests plus manual end-to-end review, moderation, comment, reply and like flows before merging.
+
