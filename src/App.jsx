@@ -418,6 +418,7 @@ function AdminDashboard({ auth, db }) {
   const [archivedReviews, setArchivedReviews] = useState([]);
   const [pendingComments, setPendingComments] = useState([]);
   const [pendingReplies, setPendingReplies] = useState([]);
+  const [pendingReports, setPendingReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
@@ -448,6 +449,7 @@ function AdminDashboard({ auth, db }) {
 
       const commentItems = [];
       const replyItems = [];
+      const reportItems = [];
       // Pending comments/replies may belong to approved or archived reviews too.
       const allReviews = [
         ...reviewItems,
@@ -456,6 +458,19 @@ function AdminDashboard({ auth, db }) {
       ];
 
       for (const review of allReviews) {
+        const reportsSnap = await getDocs(query(
+          collection(db, 'reviews', review.id, 'reports'),
+          where('status', '==', 'pending')
+        ));
+        reportsSnap.docs.forEach((reportDoc) => {
+          reportItems.push({
+            id: reportDoc.id,
+            reviewId: review.id,
+            houseName: review.houseName,
+            ...reportDoc.data(),
+          });
+        });
+
         const commentsSnap = await getDocs(
           collection(db, 'reviews', review.id, 'comments')
         );
@@ -487,6 +502,7 @@ function AdminDashboard({ auth, db }) {
       }
       setPendingComments(commentItems);
       setPendingReplies(replyItems);
+      setPendingReports(reportItems);
     } catch (err) {
       console.error('Admin moderation load failed:', err);
       setError('ডেটা লোড করা যায়নি। এই account-এর UID admins collection-এর document ID কি না এবং Firestore Rules published কি না পরীক্ষা করুন।');
@@ -542,6 +558,7 @@ function AdminDashboard({ auth, db }) {
     setArchivedReviews([]);
     setPendingComments([]);
     setPendingReplies([]);
+    setPendingReports([]);
   };
 
   if (!auth || !db) {
@@ -593,7 +610,7 @@ function AdminDashboard({ auth, db }) {
       </header>
       <main className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
         <div className="grid grid-cols-3 gap-3">
-          {[['Pending reviews', pendingReviews.length], ['Comments', pendingComments.length], ['Replies', pendingReplies.length]].map(([label, count]) => (
+          {[['Pending reviews', pendingReviews.length], ['Comments', pendingComments.length], ['Replies', pendingReplies.length], ['Reports', pendingReports.length]].map(([label, count]) => (
             <div key={label} className="bg-white rounded-xl border border-slate-200 p-4"><p className="text-xs text-slate-500">{label}</p><p className="text-2xl font-extrabold">{count}</p></div>
           ))}
         </div>
@@ -674,6 +691,26 @@ function AdminDashboard({ auth, db }) {
             <article key={`${item.reviewId}-${item.commentId}-${item.id}`} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0"><p className="text-xs text-slate-500">Comment: {item.commentId} · {item.authorAlias}</p><p className="text-sm whitespace-pre-wrap">{item.text}</p></div>
               <ActionButtons path={['reviews', item.reviewId, 'comments', item.commentId, 'replies']} id={item.id} label="Reply" />
+            </article>
+          ))}
+        </section>
+        <section className="space-y-3">
+          <h2 className="font-extrabold text-lg">Pending Review Reports</h2>
+          {pendingReports.length === 0 && !loading && <p className="bg-white p-4 rounded-xl text-sm text-slate-500">কোনো pending report নেই।</p>}
+          {pendingReports.map((item) => (
+            <article key={item.reviewId + '-' + item.id} className="bg-white border border-rose-200 rounded-xl p-4 space-y-2">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-bold">{item.houseName || 'Review'} <span className="text-xs font-normal text-slate-500">· {item.reviewId}</span></h3>
+                  <p className="text-sm font-semibold text-rose-700">{item.reason}</p>
+                  {item.details && <p className="text-sm whitespace-pre-wrap mt-1">{item.details}</p>}
+                  <p className="text-xs text-slate-500 mt-1">Private report · {item.reporterUid}</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button disabled={busyId === item.id} onClick={() => moderate(['reviews', item.reviewId, 'reports'], item.id, 'reviewed', 'Report')} className="px-3 py-2 rounded-lg bg-emerald-100 text-emerald-900 text-xs font-bold disabled:opacity-50">Mark reviewed</button>
+                  <button disabled={busyId === item.id} onClick={() => moderate(['reviews', item.reviewId, 'reports'], item.id, 'dismissed', 'Report')} className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold disabled:opacity-50">Dismiss</button>
+                </div>
+              </div>
             </article>
           ))}
         </section>
